@@ -112,6 +112,10 @@ static const struct of_device_id dsi_display_dt_match[] = {
 	{}
 };
 
+
+static unsigned int cur_refresh_rate = 60;
+
+
 static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
 			u32 mask, bool enable)
 {
@@ -8565,6 +8569,11 @@ int dsi_display_pre_commit(void *display,
 	return rc;
 }
 
+unsigned int dsi_panel_get_refresh_rate(void)
+{
+	return READ_ONCE(cur_refresh_rate);
+}
+
 /*#ifdef OPLUS_BUG_STABILITY*/
 /*Yaqiang.Shi@RM.Display.LCD.Driver, add for 90Hz and 120Hz gamma switch*/
 int gamma_flag = 0;
@@ -8631,6 +8640,7 @@ int dsi_display_enable(struct dsi_display *display)
 	mutex_lock(&display->display_lock);
 
 	mode = display->panel->cur_mode;
+	WRITE_ONCE(cur_refresh_rate, mode->timing.refresh_rate);
 
 #ifdef OPLUS_BUG_STABILITY
 /*Hujie@PSW.MM.Display.LCD.Stable,2019-11-18 To fix garbage issue during panel resolution switch */
