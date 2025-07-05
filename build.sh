@@ -10,6 +10,8 @@ export ARCH=arm64
 export CLANG_PATH="/$HOME/clang/bin"
 export PATH="$CLANG_PATH:$PATH"
 export CROSS_COMPILE=aarch64-linux-gnu-
+export KBUILD_BUILD_USER=root
+export KBUILD_BUILD_HOST=dg02-pool06-kvm10
 
 echo
 echo "Kernel is going to be built using $KERNEL_DEFCONFIG"
