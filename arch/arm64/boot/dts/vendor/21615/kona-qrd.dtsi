@@ -906,14 +906,14 @@
 
 		trips {
 			skin_therm0: active-config0 {
-				temperature = <62000>;
-				hysteresis = <5000>;
+				temperature = <52000>;
+				hysteresis = <1000>;
 				type = "passive";
 			};
 
 			skin_therm1: active-config1 {
-				temperature = <65000>;
-				hysteresis = <5000>;
+				temperature = <62000>;
+				hysteresis = <1000>;
 				type = "passive";
 			};
 
