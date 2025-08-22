@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=Flashing Kernel Now...
+kernel.string=Flashing Kernel Now...Remember to manually disable avb2.0.
 do.devicecheck=0
 do.modules=0
 do.systemless=1
