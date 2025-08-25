@@ -57,7 +57,7 @@ export CROSS_COMPILE=aarch64-linux-gnu-
 mkdir -p out
 
 KERNEL_DEFCONFIG=vendor/kona-perf_defconfig
-ANYKERNEL_NAME=rui5.0-stock
+ANYKERNEL_NAME=c15-porting
 
 #################################################################################################################################
 
