@@ -19,4 +19,3 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/include
 endif
 endif
 obj-$(CONFIG_NANOHUB)	+= sensor_devinfo.o
-obj-$(CONFIG_OPLUS_SENSOR_FB_MTK) += oplus_sensor_feedback/
