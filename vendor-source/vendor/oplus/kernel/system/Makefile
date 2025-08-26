@@ -2,7 +2,6 @@
 # Copyright (C) 2018-2020 Oplus. All rights reserved.
 
 obj-y 	+= platform.o
-obj-$(CONFIG_OPLUS_FEATURE_UBOOT_LOG) 	+= uboot_log/
 obj-$(CONFIG_OPLUS_FEATURE_SHUTDOWN_DETECT)    += shutdown_detect/
 obj-$(CONFIG_OPLUS_FEATURE_SLABTRACE_DEBUG) +=  slabtrace/
 obj-$(CONFIG_OPLUS_FEATURE_OPROJECT) 	+= oplus_project/
