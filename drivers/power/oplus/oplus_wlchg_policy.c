@@ -6300,9 +6300,18 @@ void oplus_wpc_set_rtx_function(bool is_on)
 	wlchg_enable_tx_function(is_on);
 }
 
-int __attribute__((weak)) oplus_wpc_get_online_status(void)
+int oplus_wpc_get_online_status(void)
 {
-	return -1;
+	if (!g_wpc_chip) {
+		return 0;
+	}
+
+	if (g_wpc_chip->wpc_ops && g_wpc_chip->wpc_ops->wpc_get_online_status){
+		return g_wpc_chip->wpc_ops->wpc_get_online_status();
+	}
+		
+	else
+		return 0;
 }
 
 int oplus_wpc_get_max_wireless_power(void)
