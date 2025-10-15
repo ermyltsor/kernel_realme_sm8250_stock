@@ -8,7 +8,7 @@ Origin URL: https://github.com/realme-kernel-opensource/realmeGT-Neo2_AndroidR-k
 
 Supported devices:
 
-`realme GT Exp. Master Edition(RMX3366) — 真我GT 大师探索版`
+`realme GT Master Explorer Edition(RMX3366) — realme GT 大师探索版`
 
 `realme GT Neo2(RMX3370)` 
 
@@ -34,7 +34,7 @@ https://github.com/realme-kernel-opensource/realme_gt_master_exploratory_realme_
 
 | Device Name                  | Model   | Device    | prjname | Region          |
 |------------------------------|---------|-----------|---------|-----------------|
-| realme GT Exp. Master Edition| RMX3366 | RE546F    | 21615   | CN              |
+| realme GT 大师探索版         | RMX3366 | RE546F    | 21615   | CN              |
 | realme Q5 Pro                | RMX3372 | RE5477    | 21623   | CN              |
 | realme GT Neo3T              | RMX3371 | RE54E4L1  | 21732   | IN              |
 | realme GT Neo3T              | RMX3371 | RE54E4L1  | 21733   | EU              |
