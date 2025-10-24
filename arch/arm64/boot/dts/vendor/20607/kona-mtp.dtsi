@@ -614,7 +614,7 @@
 
 };
 
-#ifdef OPLUS_FEATURE_CHG_BASIC
+//#ifdef OPLUS_FEATURE_CHG_BASIC
 &qupv3_se11_i2c  {
 	status = "ok";
 	/* AWINIC AW8697 Haptic */
@@ -1231,7 +1231,7 @@
 	status = "okay";
 	qcom,clk-freq-out = <100000>;
 
-#ifdef OPLUS_FEATURE_CHG_BASIC
+//#ifdef OPLUS_FEATURE_CHG_BASIC
 
 	da9313-divider@68 {
 		status = "okay";

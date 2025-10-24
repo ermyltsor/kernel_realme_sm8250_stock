@@ -4803,7 +4803,7 @@
 				drive-strength = <2>;   /* 2 MA */
 			};
 		};
-#ifdef OPLUS_FEATURE_CHG_BASIC
+		//#ifdef OPLUS_FEATURE_CHG_BASIC
 		aw_haptics: aw_haptics {
 			aw_irq_gpio_default: aw_irq_gpio_default {
 				mux {
