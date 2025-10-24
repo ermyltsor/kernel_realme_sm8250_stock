@@ -4,14 +4,7 @@
 
 ## rui2.0 — Based on Android 11 / realme UI 2.0
 
-Origin URL: https://github.com/realme-kernel-opensource/realmeGT-Neo2_AndroidR-kernel-source
-
-Supported devices:
-
-`realme GT Master Explorer Edition(RMX3366) — realme GT 大师探索版`
-
-`realme GT Neo2(RMX3370)` 
-
+Origin URL: https://github.com/realme-kernel-opensource/realme_GTMasterExploratory_X9pro_GTneo2-kernel-source
 
 ## rui3.0 — Based on Android 12 / realme UI 3.0
 
