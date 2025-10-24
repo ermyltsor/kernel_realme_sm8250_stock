@@ -13,3 +13,6 @@ subdir-y += 20607
 
 # realme GT 大师探索版
 subdir-y += 21615
+
+# realme GT Neo2
+subdir-y += 21619
