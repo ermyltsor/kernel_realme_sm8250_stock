@@ -21,13 +21,15 @@
 #include "oplus_dc_diming.h"
 #endif
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+#include "../../iris/dsi_iris5_api.h"
 #endif
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/10/22, oplus adfr */
 #include "oplus_adfr.h"
 #endif
 
 #ifdef OPLUS_BUG_STABILITY
+/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 #include "sde_trace.h"
 
 extern u32 g_new_bk_level;
@@ -86,6 +88,7 @@ static const struct drm_prop_enum_list e_frame_trigger_mode[] = {
 };
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Feature,2019-11-04 add for global hbm */
 extern int oplus_debug_max_brightness;
 extern int oplus_seed_backlight;
 #endif
@@ -99,6 +102,7 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 	struct drm_event event;
 	int rc = 0;
 #ifdef OPLUS_BUG_STABILITY
+	/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 		SDE_ATRACE_BEGIN("debug_io_issue_for_backlight_smooth");
 #endif
 
@@ -115,6 +119,7 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 		brightness = display->panel->bl_config.bl_max_level;
 
 #ifndef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Feature,2019-11-04 add for global hbm */
 	/* map UI brightness into driver backlight level with rounding */
 	bl_lvl = mult_frac(brightness, display->panel->bl_config.bl_max_level,
 			display->panel->bl_config.brightness_max_level);
@@ -178,6 +183,7 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 			c_conn->unset_bl_level = 0;
 		}
 #else
+	/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 		if (c_conn->ops.set_backlight) {
 			/* skip notifying user space if bl is 0 */
 			if (brightness != 0) {
@@ -187,7 +193,8 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 					c_conn->base.dev, &event, (u8 *)&brightness);
 			}
 
-		if (((!strcmp(display->panel->oplus_priv.vendor_name, "S6E3HC3")) || (!strcmp(display->panel->oplus_priv.vendor_name, "SOFE03F"))) && backlight_smooth_enable){
+		if (((!strcmp(display->panel->oplus_priv.vendor_name, "S6E3HC3")) || (!strcmp(display->panel->oplus_priv.vendor_name, "SOFE03F"))
+			|| (!strcmp(display->panel->oplus_priv.vendor_name, "AMS662ZS01"))) && backlight_smooth_enable){
 				if((bl_lvl >= 2)&&( bl_lvl <= 200)) {
 					spin_lock(&g_bk_lock);
 					g_new_bk_level = bl_lvl;
@@ -209,6 +216,7 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 #endif
 
 #ifdef OPLUS_BUG_STABILITY
+	/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 		SDE_ATRACE_END("debug_io_issue_for_backlight_smooth");
 #endif
 
@@ -249,6 +257,7 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 	bl_config = &display->panel->bl_config;
 	props.max_brightness = bl_config->brightness_max_level;
 #ifndef OPLUS_BUG_STABILITY
+/*Ling.Guo@PSW.MM.Display.LCD.Feature,2019-11-04 modify for default brightness*/
 	props.brightness = bl_config->brightness_max_level;
 #else
 	props.brightness = bl_config->brightness_default_level;
@@ -678,6 +687,7 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 	int rc = 0;
 
 #ifdef OPLUS_BUG_STABILITY
+/*Gou shengjun@PSW.MM.Display.LCD.Stable,2019-03-7 fix backlight race problem */
 	struct backlight_device *bd;
 #endif /* OPLUS_BUG_STABILITY */
 
@@ -695,6 +705,7 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 	}
 
 #ifdef OPLUS_BUG_STABILITY
+/*Gou shengjun@PSW.MM.Display.LCD.Stable,2019-03-7 fix backlight race problem */
 	bd = c_conn->bl_device;
 	if (!bd) {
 		SDE_ERROR("Invalid params backlight_device null\n");
@@ -709,6 +720,7 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 	if (!c_conn->allow_bl_update) {
 		c_conn->unset_bl_level = bl_config->bl_level;
 #ifdef OPLUS_BUG_STABILITY
+/*Gou shengjun@PSW.MM.Display.LCD.Stable,2019-03-7 fix backlight race problem */
 		mutex_unlock(&bd->update_lock);
 #endif /* OPLUS_BUG_STABILITY */
 		return 0;
@@ -730,12 +742,14 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 	c_conn->unset_bl_level = 0;
 
 #ifdef OPLUS_BUG_STABILITY
+/*Gou shengjun@PSW.MM.Display.LCD.Stable,2019-03-7 fix backlight race problem */
 	mutex_unlock(&bd->update_lock);
 #endif /* OPLUS_BUG_STABILITY */
 
 	return rc;
 }
 #ifdef OPLUS_BUG_STABILITY
+/* QianXu@MM.Display.LCD.Stability, 2020/3/31, for decoupling display driver */
 int _sde_connector_update_bl_scale_(struct sde_connector *c_conn)
 {
 	return _sde_connector_update_bl_scale(c_conn);
@@ -781,10 +795,12 @@ void sde_connector_set_qsync_params(struct drm_connector *connector)
 			c_conn->qsync_updated = true;
 			c_conn->qsync_mode = qsync_propval;
 #ifdef OPLUS_FEATURE_ADFR
+			/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-16 fixed qsync window and panel min fps nonsynchronous issue */
 			if (oplus_adfr_is_support()) {
 				if (c_conn->qsync_mode == SDE_RM_QSYNC_DISABLED) {
 					/* qsync disable need change min fps */
 					c_conn->qsync_curr_dynamic_min_fps = 0;
+					/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/01/27, Modify for closing window immediately when qsync off */
 					c_conn->qsync_deferred_window_status = SET_WINDOW_IMMEDIATELY;
 				} else {
 					/* qsync enable no need change window */
@@ -796,6 +812,7 @@ void sde_connector_set_qsync_params(struct drm_connector *connector)
 	}
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
 		/*
 		prop_dirty = msm_property_is_dirty(&c_conn->property_info,
@@ -816,7 +833,9 @@ void sde_connector_set_qsync_params(struct drm_connector *connector)
 					SDE_INFO("kVRR updated qsync min fps %d -> %d\n",
 							c_conn->qsync_dynamic_min_fps, qsync_propval);
 					c_conn->qsync_updated = true;
+					/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-16 fixed qsync window and panel min fps nonsynchronous issue */
 					c_conn->qsync_curr_dynamic_min_fps = qsync_propval;
+					/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/01/27, fixed qsync off tearing issue */
 					if (qsync_propval == 0) {
 						/* closing window immediately when qsync off */
 						c_conn->qsync_deferred_window_status = SET_WINDOW_IMMEDIATELY;
@@ -970,6 +989,7 @@ int sde_connector_pre_kickoff(struct drm_connector *connector)
 
 	rc = _sde_connector_update_dirty_properties(connector);
 	#ifdef OPLUS_BUG_STABILITY
+	/*Kevin.liuwq@PSW.MM.Display.LCD.Stable,2021-02-16  Fix low light because of sync_ panel_brightness flash problem*/
 	if (c_conn->connector_type == DRM_MODE_CONNECTOR_DSI) {
 		display = (struct dsi_display *)c_conn->display;
 		if(display && display->panel && display->panel->oplus_priv.vendor_name) {
@@ -1029,7 +1049,9 @@ int sde_connector_prepare_commit(struct drm_connector *connector)
 		params.qsync_mode = c_conn->qsync_mode;
 		params.qsync_update = true;
 #ifdef OPLUS_FEATURE_ADFR
+		/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 		if (oplus_adfr_is_support()) {
+			/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-16 fixed qsync window and panel min fps nonsynchronous issue */
 			params.qsync_dynamic_min_fps = c_conn->qsync_curr_dynamic_min_fps;
 		}
 #endif /* OPLUS_FEATURE_ADFR */
@@ -1663,6 +1685,7 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 				&c_state->property_state, idx);
 		break;
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	case CONNECTOR_PROP_QSYNC_MIN_FPS:
 		if (oplus_adfr_is_support()) {
 			SDE_INFO("kVRR set qsync minfps dirty with %llu[%08X]\n", val, val);
@@ -2734,6 +2757,7 @@ static int _sde_connector_install_properties(struct drm_device *dev,
 					CONNECTOR_PROP_QSYNC_MODE);
 
 #ifdef OPLUS_FEATURE_ADFR
+		/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 		/* add qsync min fps prop when DPU support and ADFR support */
 		if (sde_kms->catalog->has_qsync && oplus_adfr_is_support()) {
 			msm_property_install_range(&c_conn->property_info, "qsync_min_fps",
@@ -2749,6 +2773,9 @@ static int _sde_connector_install_properties(struct drm_device *dev,
 	}
 
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Feature,2018-11-21
+ * Support custom propertys
+*/
 	msm_property_install_range(&c_conn->property_info,"CONNECTOR_CUST",
 		0x0, 0, INT_MAX, 0, CONNECTOR_PROP_CUSTOM);
 #endif

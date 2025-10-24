@@ -5,6 +5,7 @@ ccflags-y += -I$(srctree)/techpack/display/rotator
 ccflags-y += -I$(srctree)/techpack/display/oplus
 
 ifeq ($(OPLUS_FEATURE_PXLW_IRIS5),yes)
+#Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Pixelworks Iris5
 ccflags-y += -I$(srctree)/techpack/display/iris
 ccflags-y += -DOPLUS_FEATURE_PXLW_IRIS5
 endif #/* OPLUS_FEATURE_PXLW_IRIS5 */

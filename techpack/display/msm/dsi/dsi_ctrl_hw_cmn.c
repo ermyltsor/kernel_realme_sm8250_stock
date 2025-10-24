@@ -14,7 +14,8 @@
 #include "dsi_catalog.h"
 #include "sde_dbg.h"
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
+#include "../../iris/dsi_iris5_api.h"
 #endif
 #define MMSS_MISC_CLAMP_REG_OFF           0x0014
 #define DSI_CTRL_DYNAMIC_FORCE_ON         (0x23F|BIT(8)|BIT(9)|BIT(11)|BIT(21))
@@ -679,6 +680,7 @@ void dsi_ctrl_hw_cmn_kickoff_command(struct dsi_ctrl_hw *ctrl,
 	reg |= BIT(16);/* Disable read watermark */
 
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+	// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, set DMA FIFO read and write watermark to 15/16 full */
 	if (iris_get_feature())
 		reg = 0x33;
 #endif

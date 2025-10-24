@@ -87,6 +87,7 @@ static void convert_to_dsi_mode(const struct drm_display_mode *drm_mode,
 		dsi_mode->panel_mode = DSI_OP_CMD_MODE;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/*Qianxu@MULTIMEDIA.DISPLAY, 2020/10/27, ADFR Feature*/
 	dsi_mode->vsync_source = (drm_mode->flags & DRM_MODE_FLAG_VSYNCE_SOURCE_MASK) >> 25;
 #endif /*OPLUS_FEATURE_ADFR*/
 }
@@ -144,6 +145,7 @@ void dsi_convert_to_drm_mode(const struct dsi_display_mode *dsi_mode,
 		drm_mode->flags |= DRM_MODE_FLAG_CMD_MODE_PANEL;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/*Qianxu@MULTIMEDIA.DISPLAY, 2020/10/27, ADFR Feature*/
 	if (dsi_mode->vsync_source >= 0 && dsi_mode->vsync_source <= 15) {
 		drm_mode->flags |= (dsi_mode->vsync_source << 25) & DRM_MODE_FLAG_VSYNCE_SOURCE_MASK;
 	}
@@ -151,6 +153,7 @@ void dsi_convert_to_drm_mode(const struct dsi_display_mode *dsi_mode,
 
 	/* set mode name */
 #ifndef OPLUS_FEATURE_ADFR
+	/*Qianxu@MULTIMEDIA.DISPLAY, 2020/10/27, ADFR Feature*/
 	snprintf(drm_mode->name, DRM_DISPLAY_MODE_LEN, "%dx%dx%dx%d%s",
 			drm_mode->hdisplay, drm_mode->vdisplay,
 			drm_mode->vrefresh, drm_mode->clock,
@@ -453,9 +456,11 @@ static bool dsi_bridge_mode_fixup(struct drm_bridge *bridge,
 		}
 	}
 #ifdef OPLUS_BUG_STABILITY
+	/*Mark.Yao@PSW.MM.Display.LCD.Stable,2019-12-09 skip dms switch if cont_splash not ready */
 	if (display->is_cont_splash_enabled)
 		dsi_mode.dsi_mode_flags &= ~DSI_MODE_FLAG_DMS;
 #ifdef OPLUS_FEATURE_AOD_RAMLESS
+// Yuwei.Zhang@MULTIMEDIA.DISPLAY.LCD, 2020/09/25, sepolicy for aod ramless
 	if (display->panel && display->panel->oplus_priv.is_aod_ramless) {
 		if (crtc_state->active_changed && (dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_DYN_CLK)) {
 			DSI_ERR("dyn clk changed when active_changed, WA to skip dyn clk change\n");

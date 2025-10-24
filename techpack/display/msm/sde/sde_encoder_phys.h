@@ -332,6 +332,7 @@ struct sde_encoder_phys {
 	enum frame_trigger_mode_type frame_trigger_mode;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	//2 : transferring (wr_ptr_irq)
 	//1 : transfer finish (pp_tx_done_irq)
 	//0 : panel read finish (rd_ptr_irq)

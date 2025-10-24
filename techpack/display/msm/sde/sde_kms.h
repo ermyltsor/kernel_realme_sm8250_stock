@@ -82,6 +82,7 @@
 #define SDE_ERROR(fmt, ...) pr_err("[sde error]" fmt, ##__VA_ARGS__)
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Log,2020-05-14 add for mm keyevent */
 #undef SDE_ERROR
 #include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #define SDE_ERROR(fmt, ...) \

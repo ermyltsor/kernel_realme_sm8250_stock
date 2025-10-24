@@ -37,10 +37,11 @@
 #include "sde_plane.h"
 #include "sde_color_processing.h"
 #ifdef OPLUS_BUG_STABILITY
+/* QianXu@MM.Display.LCD.Stability, 2020/3/31, for decoupling display driver */
 #include "oplus_display_private_api.h"
 #endif
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+#include "../../iris/dsi_iris5_api.h"
 #endif
 
 #define SDE_DEBUG_PLANE(pl, fmt, ...) SDE_DEBUG("plane%d " fmt,\
@@ -1161,6 +1162,7 @@ static inline void _sde_plane_setup_csc(struct sde_plane *psde)
 	else
 		psde->csc_ptr = (struct sde_csc_cfg *)&sde_csc_YUV2RGB_601L;
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+	// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	if (iris_get_feature()&& iris5_hdr_enable_get() == 1)
 		psde->csc_ptr = (struct sde_csc_cfg *)&hdrYUV;
 	else if (iris_get_feature()&& iris5_hdr_enable_get() == 2)
@@ -2856,6 +2858,9 @@ static void _sde_plane_map_prop_to_dirty_bits(void)
 	plane_prop_array[PLANE_PROP_INFO] =
 	plane_prop_array[PLANE_PROP_ALPHA] =
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Feature,2018-11-21
+ * Support custom property
+*/
 	plane_prop_array[PLANE_PROP_CUSTOM] =
 #endif /* OPLUS_BUG_STABILITY */
 	plane_prop_array[PLANE_PROP_INPUT_FENCE] =
@@ -3559,6 +3564,9 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
 		0x0, 0, zpos_max, zpos_def, PLANE_PROP_ZPOS);
 
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Feature,2018-11-21
+ * Support custom propertys
+*/
 	msm_property_install_range(&psde->property_info,"PLANE_CUST",
 		0x0, 0, INT_MAX, 0, PLANE_PROP_CUSTOM);
 #endif

@@ -21,6 +21,9 @@
 #include "dsi_parser.h"
 #include "msm_drv.h"
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Stability,2018/11/21
+ * Add for save display panel power status at oplus display management
+*/
 #include "oplus_dsi_support.h"
 struct oplus_brightness_alpha {
 	u32 brightness;
@@ -119,6 +122,7 @@ struct dsi_backlight_config {
 	u32 bl_max_level;
 	u32 brightness_max_level;
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Feature,2019-11-04 add for global hbm */
 	u32 bl_normal_max_level;
 	u32 brightness_normal_max_level;
 	u32 brightness_default_level;
@@ -154,6 +158,7 @@ struct dsi_panel_reset_config {
 	int lcd_mode_sel_gpio;
 	u32 mode_sel_state;
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	int iris_rst_gpio;
 	int abyp_gpio;
 	int abyp_status_gpio;
@@ -162,6 +167,7 @@ struct dsi_panel_reset_config {
 	int iris_vdd_gpio;
 #endif
 #ifdef OPLUS_BUG_STABILITY
+/*Ling.Guo@PSW.MM.Display.LCD.Feature,2019-11-11 add for panel vout 1.5V*/
 	int panel_vout_gpio;
 	int panel_te_esd_gpio;
 	int panel_vddr_aod_en_gpio;
@@ -180,6 +186,7 @@ enum esd_check_status_mode {
 struct drm_panel_esd_config {
 	bool esd_enabled;
 	#ifdef OPLUS_BUG_STABILITY
+	/*james.zhu@RM.MM.Display.LCD.Feature, 2021/02/18 Add use oplus_display_esd c file for panel esd*/
 	bool esd_oplus_enabled;
 	#endif
 
@@ -191,9 +198,18 @@ struct drm_panel_esd_config {
 	u8 *return_buf;
 	u8 *status_buf;
 	u32 groups;
+#ifdef OPLUS_BUG_STABILITY
+/*yagnhanyue@RM.MM.Display.LCD.Params, 2020/11/19 add for panel esd cofnig*/
+	struct workqueue_struct *err_workq;
+	struct work_struct err_handler_work;
+	bool esd_err_flag_enabled;
+	int err_flag_gpio;
+	int err_tirgger_polarity;
+#endif
 };
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Feature,2019-11-07 add for oplus custom info */
 struct dsi_panel_oplus_privite {
 	const char *vendor_name;
 	const char *manufacture_name;
@@ -203,8 +219,13 @@ struct dsi_panel_oplus_privite {
 	bool is_pxlw_iris5;
 	bool bl_interpolate_nosub;
 #ifdef OPLUS_FEATURE_AOD_RAMLESS
+// Yuwei.Zhang@MULTIMEDIA.DISPLAY.LCD, 2020/09/25, sepolicy for aod ramless
 	bool is_aod_ramless;
 #endif /* OPLUS_FEATURE_AOD_RAMLESS */
+/*yanghanyue@RM.MM.Display.LCD.Params, 2020/12/17 add for panel osc config*/
+	bool is_osc_support;
+	u32 osc_clk_mode0_rate;
+	u32 osc_clk_mode1_rate;
 };
 #endif /* OPLUS_BUG_STABILITY */
 
@@ -258,11 +279,16 @@ struct dsi_panel {
 
 	bool sync_broadcast_en;
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.Service.Feature,2018/11/21
+ * For OnScreenFingerprint feature
+*/
 	bool is_hbm_enabled;
 	/* Fix aod flash problem */
 	bool need_power_on_backlight;
+/*Mark.Yao@PSW.MM.Display.LCD.Feature,2019-10-30 add for fod brightness */
 	struct oplus_brightness_alpha *ba_seq;
 	int ba_count;
+/*Jiasong.Zhong@PSW.MM.Display.LCD.Feature,2020-09-23 add for dc brightness */
 	struct oplus_brightness_alpha *dc_ba_seq;
 	int dc_ba_count;
 
@@ -272,14 +298,17 @@ struct dsi_panel {
 
 	int panel_test_gpio;
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	bool is_secondary;
 #endif
 	int power_mode;
 	enum dsi_panel_physical_type panel_type;
 #ifdef OPLUS_FEATURE_ADFR
+	/* Qianxu@MULTIMEDIA.DISPLAY, 2020/10/21, vsync switch */
 	int vsync_switch_gpio;
 	int vsync_switch_gpio_level;
 	bool vsync_switch_pending;
+	/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-18 add for vsync switch in resolution switch and aod scene */
 	bool force_te_vsync;
 	bool need_vsync_switch;
 	u32 cur_h_active;
@@ -404,6 +433,9 @@ void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
 void dsi_panel_calc_dsi_transfer_time(struct dsi_host_common_cfg *config,
 		struct dsi_display_mode *mode, u32 frame_threshold_us);
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Stability,2018/11/21
+ * Add for oplus display new structure
+*/
 int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 			   enum dsi_cmd_set_type type);
 #endif

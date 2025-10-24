@@ -51,7 +51,7 @@
 #include "sde_connector.h"
 
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+#include "../../iris/dsi_iris5_api.h"
 #endif
 #include <soc/qcom/scm.h>
 #include "soc/qcom/secure_buffer.h"
@@ -60,11 +60,13 @@
 #define CREATE_TRACE_POINTS
 #include "sde_trace.h"
 #ifdef OPLUS_BUG_STABILITY
+/* QianXu@MM.Display.LCD.Stability, 2020/3/31, for decoupling display driver */
 #include "oplus_display_private_api.h"
 #include "oplus_onscreenfingerprint.h"
 #endif
 
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/10/22, oplus adfr */
 #include "oplus_adfr.h"
 #endif
 
@@ -1218,6 +1220,7 @@ static void sde_kms_complete_commit(struct msm_kms *kms,
 	sde_kms_check_for_ext_vote(sde_kms, &priv->phandle);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/12/2, double TE */
 	if (oplus_adfr_is_support()) {
 		if (oplus_adfr_get_vsync_mode() == OPLUS_DOUBLE_TE_VSYNC) {
 			SDE_ATRACE_BEGIN("sde_kms_adfr_vsync_source_switch");
@@ -1226,6 +1229,7 @@ static void sde_kms_complete_commit(struct msm_kms *kms,
 			}
 			SDE_ATRACE_END("sde_kms_adfr_vsync_source_switch");
 		} else if (oplus_adfr_get_vsync_mode() == OPLUS_EXTERNAL_TE_TP_VSYNC) {
+			/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-18 add for vsync switch in resolution switch and aod scene */
 			SDE_ATRACE_BEGIN("sde_kms_adfr_vsync_switch");
 			for_each_old_crtc_in_state(old_state, crtc, old_crtc_state, i) {
 				sde_kms_adfr_vsync_switch(kms, crtc);
@@ -1440,6 +1444,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 		.pre_kickoff  = dsi_conn_pre_kickoff,
 		.clk_ctrl = dsi_display_clk_ctrl,
 #ifdef OPLUS_BUG_STABILITY
+/* QianXu@MM.Display.LCD.Stability, 2020/3/31, for decoupling display driver */
 		.set_power = dsi_display_oplus_set_power,
 #else
 		.set_power = dsi_display_set_power,
@@ -1454,6 +1459,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 		.get_panel_vfp = dsi_display_get_panel_vfp,
 		.get_default_lms = dsi_display_get_default_lms,
 #ifdef OPLUS_FEATURE_ADFR
+		/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 		// enable qsync on/off cmds
 		.prepare_commit = dsi_display_pre_commit,
 #endif

@@ -21,6 +21,7 @@
 		fmt, c ? c->index : -1,	##__VA_ARGS__)
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Log,2020-05-14 add for mm keyevent */
 #undef DSI_CTRL_HW_ERR
 #include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #define DSI_CTRL_HW_ERR(c, fmt, ...) \

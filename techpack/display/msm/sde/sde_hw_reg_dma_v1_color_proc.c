@@ -105,6 +105,7 @@
 #define UV_INDEX                           1
 
 #ifdef OPLUS_BUG_STABILITY
+/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 extern u32 g_oplus_save_pcc;
 #endif
 
@@ -995,6 +996,7 @@ void reg_dmav1_setup_dspp_igcv31(struct sde_hw_dspp *ctx, void *cfg)
 	struct dsi_display *dsi_display;
 	int rc, i = 0, j = 0;
 #if defined(OPLUS_FEATURE_PW_4096) || defined(OPLUS_FEATURE_PXLW_IRIS5)
+//ChenYongxing@MULTIMEDIA.DISPLAY.SERVICE, 2020/06/23, Add for Iris PW4096 blur
 	u32 *addr[IGC_TBL_NUM], *data;
 #else
 	u32 *addr[IGC_TBL_NUM];
@@ -1060,6 +1062,7 @@ void reg_dmav1_setup_dspp_igcv31(struct sde_hw_dspp *ctx, void *cfg)
 	addr[1] = lut_cfg->c1;
 	addr[2] = lut_cfg->c2;
 #if defined(OPLUS_FEATURE_PW_4096) || defined(OPLUS_FEATURE_PXLW_IRIS5)
+//ChenYongxing@MULTIMEDIA.DISPLAY.SERVICE, 2020/06/23, Add for Iris PW4096 blur
 	data = kzalloc((IGC_TBL_LEN + 1) * sizeof(u32), GFP_KERNEL);
 	if (!data) {
 		DRM_ERROR("unable to allocate buffer\n");
@@ -1077,6 +1080,7 @@ void reg_dmav1_setup_dspp_igcv31(struct sde_hw_dspp *ctx, void *cfg)
 				addr[i][j] |= IGC_INDEX_UPDATE;
 		}
 #if defined(OPLUS_FEATURE_PW_4096) || defined(OPLUS_FEATURE_PXLW_IRIS5)
+//ChenYongxing@MULTIMEDIA.DISPLAY.SERVICE, 2020/06/23, Add for Iris PW4096 blur
 		memcpy(data, addr[i], IGC_TBL_LEN * sizeof(u32));
 		data[IGC_TBL_LEN] = data[IGC_TBL_LEN - 1];
 		REG_DMA_SETUP_OPS(dma_write_cfg, offset, data,
@@ -1091,12 +1095,14 @@ void reg_dmav1_setup_dspp_igcv31(struct sde_hw_dspp *ctx, void *cfg)
 		if (rc) {
 			DRM_ERROR("lut write failed ret %d\n", rc);
 #if defined(OPLUS_FEATURE_PW_4096) || defined(OPLUS_FEATURE_PXLW_IRIS5)
+			//ChenYongxing@MULTIMEDIA.DISPLAY.SERVICE, 2020/06/23, Add for Iris PW4096 blur
 			kfree(data);
 #endif
 			return;
 		}
 	}
 #if defined(OPLUS_FEATURE_PW_4096) || defined(OPLUS_FEATURE_PXLW_IRIS5)
+//ChenYongxing@MULTIMEDIA.DISPLAY.SERVICE, 2020/06/23, Add for Iris PW4096 blur
 	kfree(data);
 #endif
 	REG_DMA_INIT_OPS(dma_write_cfg, blk, IGC, dspp_buf[IGC][ctx->idx]);
@@ -1293,6 +1299,7 @@ void reg_dmav1_setup_dspp_pccv4(struct sde_hw_dspp *ctx, void *cfg)
 		data[i + 18] = coeffs->gb;
 		data[i + 21] = coeffs->rgb;
 #ifdef OPLUS_BUG_STABILITY
+/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 		if(i == 0) {
 			g_oplus_save_pcc = coeffs->r;
 			pr_debug("backlight smooth for g_oplus_save_pcc = %d, %d, %d", coeffs->r,coeffs->g,coeffs->b);

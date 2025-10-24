@@ -10,9 +10,10 @@
 #include "sde_formats.h"
 #include "sde_trace.h"
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+#include "../../iris/dsi_iris5_api.h"
 #endif
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/10/22, oplus adfr */
 #include "oplus_adfr.h"
 #endif
 
@@ -32,6 +33,7 @@
 #define PP_TIMEOUT_MAX_TRIALS	4
 
 #ifdef OPLUS_BUG_STABILITY
+/*Hujie@PSW.MM.Display.Lcd.Stability, 2019-09-01, add for runing SDE_RECOVERY_HARD_RESET when pingpong timeout many times*/
 #define PP_TIMEOUT_BAD_TRIALS   10
 #include <soc/oplus/system/oplus_mm_kevent_fb.h>
 extern int oplus_dimlayer_fingerprint_failcount;
@@ -209,6 +211,7 @@ static void sde_encoder_phys_cmd_pp_tx_done_irq(void *arg, int irq_idx)
 			phys_enc->hw_pp->idx - PINGPONG_0, event);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
 		atomic_set(&phys_enc->frame_state, 1);
 		SDE_DEBUG("frame_state = %d\n", atomic_read(&phys_enc->frame_state));
@@ -255,6 +258,7 @@ static void sde_encoder_phys_cmd_te_rd_ptr_irq(void *arg, int irq_idx)
 	struct sde_encoder_phys_cmd_te_timestamp *te_timestamp;
 	unsigned long lock_flags;
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	static unsigned long now;
 #endif
 
@@ -262,6 +266,7 @@ static void sde_encoder_phys_cmd_te_rd_ptr_irq(void *arg, int irq_idx)
 		return;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	// The initial value of the now variable is 0,
 	// but we don't care about the first calculation error.
 	if (oplus_adfr_is_support()) {
@@ -300,12 +305,14 @@ static void sde_encoder_phys_cmd_te_rd_ptr_irq(void *arg, int irq_idx)
 			phys_enc);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
 		if(atomic_read(&phys_enc->frame_state) == 1) {
 			atomic_set(&phys_enc->frame_state, 0);
 		}
 		SDE_DEBUG("frame_state = %d\n", atomic_read(&phys_enc->frame_state));
 
+		/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/02/01, Add for auto on cmd filter */
 		if (oplus_adfr_auto_on_cmd_filter_get()) {
 			/* when the rd_ptr_irq comes there is no need to filter auto on cmd anymore */
 			oplus_adfr_auto_on_cmd_filter_set(false);
@@ -352,10 +359,12 @@ static void sde_encoder_phys_cmd_wr_ptr_irq(void *arg, int irq_idx)
 		info[1].pp_idx, info[1].intf_idx, info[1].wr_ptr_line_count);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
 		atomic_set(&phys_enc->frame_state, 2);
 		SDE_DEBUG("frame_state = %d\n", atomic_read(&phys_enc->frame_state));
 
+		/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/02/26, add for qsync tearing issue debug */
 		interval = (u64)ktime_to_us(ktime_get()) - now;
 		SDE_DEBUG("wr_ptr_irq interval: %llu\n", interval);
 		if (interval < 13600) {
@@ -568,6 +577,7 @@ static int _sde_encoder_phys_cmd_handle_ppdone_timeout(
 		return 0;
 
 #ifdef OPLUS_BUG_STABILITY
+/*Hujie@PSW.MM.Display.Lcd.Stability, 2019-09-01, add for runing SDE_RECOVERY_HARD_RESET when pingpong timeout many times*/
 	if (cmd_enc->pp_timeout_report_cnt >= PP_TIMEOUT_BAD_TRIALS)
 		return -EFAULT;
 #endif
@@ -1006,6 +1016,7 @@ static int _get_tearcheck_threshold(struct sde_encoder_phys *phys_enc,
 	qsync_mode = sde_connector_get_qsync_mode(conn);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
 		SDE_ATRACE_BEGIN("get_tearcheck_threshold");
 		SDE_ATRACE_INT("qsync_mode", qsync_mode);
@@ -1028,6 +1039,7 @@ static int _get_tearcheck_threshold(struct sde_encoder_phys *phys_enc,
 				phys_enc->parent, &qsync_min_fps);
 
 #ifdef OPLUS_FEATURE_ADFR
+		/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 		if (oplus_adfr_is_support()) {
 			qsync_min_fps = sde_connector_get_qsync_dynamic_min_fps(conn);
 			SDE_DEBUG_CMDENC(cmd_enc,
@@ -1062,6 +1074,7 @@ static int _get_tearcheck_threshold(struct sde_encoder_phys *phys_enc,
 		threshold_lines += total_extra_lines;
 
 #ifdef OPLUS_FEATURE_ADFR
+		/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/02/26, correct the AP window setting to be less than the DDIC window */
 		if (oplus_adfr_is_support()) {
 			if (qsync_min_fps == 51) {
 				if (yres > 3216) {
@@ -1096,7 +1109,9 @@ exit:
 	threshold_lines += DEFAULT_TEARCHECK_SYNC_THRESH_START;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
+		/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/02/01, Add for qsync tearing issue debug */
 		SDE_DEBUG_CMDENC(cmd_enc, "kVRR : qsync_mode %d, qsync_minfps %d, threshold_lines %d\n",
 			qsync_mode, sde_connector_get_qsync_dynamic_min_fps(conn), threshold_lines);
 		SDE_ATRACE_END("get_tearcheck_threshold");
@@ -1513,13 +1528,16 @@ static int sde_encoder_phys_cmd_prepare_for_kickoff(
 	}
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-16 fixed qsync window and panel min fps nonsynchronous issue */
 	if (oplus_adfr_is_support()) {
 		c_conn = to_sde_connector(phys_enc->connector);
+		/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/02/01, Add for qsync tearing issue */
 		oplus_adfr_force_qsync_mode_off(phys_enc->connector);
 		if (c_conn->qsync_deferred_window_status == DEFERRED_WINDOW_START) {
 			/* window should be set in the next frame since ddic cmd take effect */
 			c_conn->qsync_deferred_window_status = DEFERRED_WINDOW_NEXT_FRAME;
 		} else if (c_conn->qsync_deferred_window_status == DEFERRED_WINDOW_NEXT_FRAME ||
+					/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/01/27, Modify for closing window immediately when qsync off */
 					c_conn->qsync_deferred_window_status == SET_WINDOW_IMMEDIATELY) {
 			SDE_ATRACE_BEGIN("update_qsync");
 			c_conn->qsync_dynamic_min_fps = c_conn->qsync_curr_dynamic_min_fps;
@@ -1558,6 +1576,7 @@ static int sde_encoder_phys_cmd_prepare_for_kickoff(
 
 #ifdef OPLUS_FEATURE_ADFR
 	}
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	// without qsync updated, update qsync window still if qsync enable
 	if (oplus_adfr_is_support()) {
 		oplus_adfr_adjust_tearcheck_for_dynamic_qsync(phys_enc);
@@ -2220,6 +2239,7 @@ struct sde_encoder_phys *sde_encoder_phys_cmd_init(
 				&cmd_enc->te_timestamp_list);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	if (oplus_adfr_is_support()) {
 		atomic_set(&phys_enc->frame_state, 0);
 		phys_enc->current_sync_threshold_start = 0;

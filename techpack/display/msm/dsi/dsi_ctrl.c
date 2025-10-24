@@ -23,10 +23,12 @@
 
 #include "sde_dbg.h"
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Log,2020-03-05 add keylog */
 #include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #endif /* OPLUS_BUG_STABILITY */
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/07/09, Iris5 Feature
+#include "../../iris/dsi_iris5_api.h"
 #endif
 
 #define DSI_CTRL_DEFAULT_LABEL "MDSS DSI CTRL"
@@ -49,6 +51,7 @@
 		c ? c->name : "inv", ##__VA_ARGS__)
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Log,2020-05-14 add for mm keyevent */
 #undef DSI_CTRL_ERR
 #include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #define DSI_CTRL_ERR(c, fmt, ...) \
@@ -347,6 +350,7 @@ static void dsi_ctrl_dma_cmd_wait_for_done(struct work_struct *work)
 			DSI_CTRL_WARN(dsi_ctrl,
 					"dma_tx done but irq not triggered\n");
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Stable,2019-12-28 dma_tx done but irq not triggered */
 			if (dsi_ctrl->irq_info.irq_num != -1) {
 				struct irq_desc *desc = irq_to_desc(dsi_ctrl->irq_info.irq_num);
 				unsigned long flags;

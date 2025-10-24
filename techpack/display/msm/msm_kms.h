@@ -122,6 +122,7 @@ struct msm_kms_funcs {
 	int (*cont_splash_config)(struct msm_kms *kms);
 	/* check for continuous splash status */
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	int (*iris5_operate)(struct msm_kms *kms, u32 operate_type, struct msm_iris_operate_value *operate_value);
 #endif
 	bool (*check_for_splash)(struct msm_kms *kms, struct drm_crtc *crtc);

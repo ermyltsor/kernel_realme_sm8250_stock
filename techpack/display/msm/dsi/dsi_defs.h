@@ -53,6 +53,7 @@
 								##__VA_ARGS__)
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Log,2020-05-14 add for mm keyevent */
 #undef DSI_ERR
 #include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #define DSI_ERR(fmt, ...)	\
@@ -319,6 +320,9 @@ enum dsi_cmd_set_type {
 	DSI_CMD_SET_QSYNC_ON,
 	DSI_CMD_SET_QSYNC_OFF,
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Stability,2018/07/03
+ * optimize screen on
+*/
 	DSI_CMD_POST_ON_BACKLIGHT,
 	DSI_CMD_AOD_ON,
 	DSI_CMD_AOD_OFF,
@@ -326,15 +330,26 @@ enum dsi_cmd_set_type {
 	DSI_CMD_HBM_OFF,
 	DSI_CMD_AOD_HBM_ON,
 	DSI_CMD_AOD_HBM_OFF,
+/*mark.yao@PSW.MM.Display.LCD.Stability,2018/4/28,add for sRGB and DCI-P3*/
 	DSI_CMD_SEED_MODE0,
 	DSI_CMD_SEED_MODE1,
 	DSI_CMD_SEED_MODE2,
 	DSI_CMD_SEED_MODE3,
 	DSI_CMD_SEED_MODE4,
+	DSI_CMD_SEED_MODE0_SWITCH,
+        DSI_CMD_SEED_MODE1_SWITCH,
+        DSI_CMD_SEED_MODE2_SWITCH,
+	DSI_CMD_SEED_MODE0_DC_SWITCH,
+	DSI_CMD_SEED_MODE1_DC_SWITCH,
+	DSI_CMD_SEED_MODE2_DC_SWITCH,
+	DSI_CMD_SEED_MODE0_DC,
+        DSI_CMD_SEED_MODE1_DC,
+        DSI_CMD_SEED_MODE2_DC,
 	DSI_CMD_SEED_OFF,
 	DSI_CMD_NORMAL_HBM_ON,
 	DSI_CMD_AOD_HIGH_LIGHT_MODE,
 	DSI_CMD_AOD_LOW_LIGHT_MODE,
+/*Song.Gao@PSW.MM.Display.LCD.Stability,2019/08/24,add SPR API for 19101 BOE panel*/
 	DSI_CMD_SPR_MODE0,
 	DSI_CMD_SPR_MODE1,
 	DSI_CMD_SPR_MODE2,
@@ -342,6 +357,7 @@ enum dsi_cmd_set_type {
 	DSI_CMD_DATA_DIMMING_OFF,
 	DSI_CMD_OSC_CLK_MODEO0,
 	DSI_CMD_OSC_CLK_MODEO1,
+/*Song.Gao@PSW.MM.Display.LCD.Stability,2020/04/21,add for DC backlight V2 enter and exit sequence*/
 	DSI_CMD_SEED_ENTER,
 	DSI_CMD_SEED_EXIT,
 	DSI_CMD_SET_PANEL_ID1,
@@ -360,12 +376,15 @@ enum dsi_cmd_set_type {
 	DSI_CMD_AOD_HBM_ON_PVT,  /*DSI_CMD_AOD_HBM_ON*/
 	DSI_CMD_AOD_HBM_OFF_PVT, /*DSI_CMD_AOD_HBM_OFF*/
 	DSI_CMD_DLY_OFF,
+	DSI_CMD_FPS_CHANGE,
 #endif
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	DSI_CMD_SET_ABYP,
 #endif
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	DSI_CMD_QSYNC_MIN_FPS_0,
 	DSI_CMD_QSYNC_MIN_FPS_1,
 	DSI_CMD_QSYNC_MIN_FPS_2,
@@ -376,7 +395,9 @@ enum dsi_cmd_set_type {
 	DSI_CMD_QSYNC_MIN_FPS_7,
 	DSI_CMD_QSYNC_MIN_FPS_8,
 	DSI_CMD_QSYNC_MIN_FPS_9,
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	DSI_CMD_FAKEFRAME,
+	/* Qianxu@MULTIMEDIA.DISPLAY, 2020/10/28, vsync switch */
 	DSI_CMD_ADFR_PRE_SWITCH,
 #endif
 
@@ -384,6 +405,7 @@ enum dsi_cmd_set_type {
 };
 
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 #define DSI_CMD_QSYNC_MIN_FPS_COUNTS 10
 #endif
 
@@ -704,14 +726,17 @@ struct dsi_display_mode_priv_info {
 	bool dsc_enabled;
 	struct msm_roi_caps roi_caps;
 #ifdef OPLUS_BUG_STABILITY
+	/*Mark.Yao@PSW.MM.Display.LCD.Stable,2019-10-24 add for fingerprint */
 	int fod_on_vblank;
 	int fod_off_vblank;
 #endif /* OPLUS_BUG_STABILITY */
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	u32 qsync_min_fps_sets_size;
 	u32 qsync_min_fps_sets[DSI_CMD_QSYNC_MIN_FPS_COUNTS];
 	u32 current_qsync_mode;
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	// fakeframe_config: 0st Bit:firsttime 1st Bit:secondtime, 1:enable 0:disable
 	// for example, 3 mean both first and second time should send fake frame
 	u32 fakeframe_config;
@@ -733,6 +758,7 @@ struct dsi_display_mode {
 	u32 pixel_clk_khz;
 	u32 dsi_mode_flags;
 #ifdef OPLUS_FEATURE_ADFR
+	/*Qianxu@MULTIMEDIA.DISPLAY, 2020/10/27, ADFR Feature*/
 	u32 vsync_source;
 #endif /*OPLUS_FEATURE_ADFR*/
 	enum dsi_op_mode panel_mode;

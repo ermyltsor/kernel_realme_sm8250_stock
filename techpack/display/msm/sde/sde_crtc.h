@@ -410,6 +410,9 @@ struct sde_crtc_state {
 
 	struct sde_core_perf_params new_perf;
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.Service.Feature,2018/11/21
+ * For OnScreenFingerprint feature
+*/
 	bool fingerprint_mode;
 	bool fingerprint_pressed;
 	bool fingerprint_defer_sync;
@@ -838,6 +841,7 @@ void sde_crtc_get_misr_info(struct drm_crtc *crtc,
 		struct sde_crtc_misr_info *crtc_misr_info);
 
 #ifdef OPLUS_BUG_STABILITY
+/* QianXu@MM.Display.LCD.Stability, 2020/3/31, for decoupling display driver */
 struct sde_kms *_sde_crtc_get_kms_(struct drm_crtc *crtc);
 #endif
 

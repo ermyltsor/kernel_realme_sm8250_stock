@@ -20,6 +20,9 @@
 #include "dsi_phy.h"
 #include "dsi_panel.h"
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Stability,2018/11/21
+ * Add for save select panel and give different feature
+*/
 #include "oplus_dsi_support.h"
 #endif /*OPLUS_BUG_STABILITY*/
 
@@ -276,6 +279,7 @@ struct dsi_display {
 	u32 te_source;
 	u32 clk_gating_config;
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	u32 off;
 	u32 cnt;
 	u8 cmd_data_type;
@@ -284,12 +288,15 @@ struct dsi_display {
 	struct workqueue_struct *dma_cmd_workq;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 	/* save qsync info, then restore qsync status after panel enable*/
 	bool need_qsync_restore;
+	/* ZhongLiuhe@MULTIMEDIA.DISPLAY.LCD.FEATURE, 2021/02/01, Add for qsync tearing issue */
 	/* force close qysnc window when qsync mode is on before panel enable */
 	bool force_qsync_mode_off;
 	uint32_t current_qsync_mode;
 	uint32_t current_qsync_dynamic_min_fps;
+	/* Qianxu@MULTIMEDIA.DISPLAY, 2020/10/21, vsync switch */
 	struct completion switch_te_gate;
 #endif /* OPLUS_FEATURE_ADFR */
 };
@@ -734,6 +741,9 @@ enum dsi_pixel_format dsi_display_get_dst_format(
  */
 int dsi_display_cont_splash_config(void *display);
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Stability,2018/10/21
+ * Add for support aod,hbm,seed
+*/
 struct dsi_display *get_main_display(void);
 
 /* Add for implement panel register read */

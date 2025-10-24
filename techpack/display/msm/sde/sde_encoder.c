@@ -40,15 +40,17 @@
 #include "sde_hw_top.h"
 #include "sde_hw_qdss.h"
 #ifdef OPLUS_BUG_STABILITY
+/* QianXu@MM.Display.LCD.Stability, 2020/3/31, for decoupling display driver */
 #include "oplus_display_private_api.h"
 #include "oplus_onscreenfingerprint.h"
 #include "oplus_dc_diming.h"
 #endif
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
-#include "dsi_iris5_api.h"
+#include "../../iris/dsi_iris5_api.h"
 #endif
 
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/10/22, oplus adfr */
 #include "oplus_adfr.h"
 #endif
 
@@ -283,6 +285,7 @@ struct sde_encoder_virt {
 	struct timer_list vsync_event_timer;
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	struct hrtimer fakeframe_timer;
 	struct kthread_work fakeframe_work;
 	uint32_t cur_mode_hdisplay;
@@ -2747,6 +2750,9 @@ static int _sde_encoder_rc_early_wakeup(struct drm_encoder *drm_enc,
 
 	disp_thread = &priv->disp_thread[sde_enc->crtc->index];
 #else
+/* Gou shengjun@PSW.MM.Display.LCD.Stable,2018-11-21
+ * fix sde_enc->crtc race
+*/
 		{
 			struct drm_crtc *crtc = sde_enc->crtc;
 
@@ -2943,6 +2949,7 @@ static void sde_encoder_virt_mode_set(struct drm_encoder *drm_enc,
 	struct sde_crtc *sde_crtc;
 	bool modeset_lock = false;
 #ifdef OPLUS_FEATURE_ADFR
+	/*Qianxu@MULTIMEDIA.DISPLAY, 2020/10/27, ADFR Feature*/
 	u32 vsync_source = 0;
 #endif /*OPLUS_FEATURE_ADFR*/
 
@@ -3100,6 +3107,7 @@ static void sde_encoder_virt_mode_set(struct drm_encoder *drm_enc,
 						SDE_ENC_RC_EVENT_POST_MODESET);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/*Qianxu@MULTIMEDIA.DISPLAY, 2020/10/27, ADFR Feature*/
 	if (oplus_adfr_is_support()) {
 		if (oplus_adfr_get_vsync_mode() == OPLUS_DOUBLE_TE_VSYNC) {
 			vsync_source = (adj_mode->flags & DRM_MODE_FLAG_VSYNCE_SOURCE_MASK) >> 25;
@@ -4476,6 +4484,9 @@ static void _sde_encoder_setup_dither(struct sde_encoder_phys *phys)
 		}
 	} else {
 #ifdef OPLUS_BUG_STABILITY
+/* Gou shengjun@PSW.MM.Display.LCD.Feature,2018-11-19
+ * Force enable dither on OnScreenFingerprint scene
+*/
 		if (_sde_encoder_setup_dither_for_onscreenfingerprint(phys, dither_cfg, len, phys->hw_pp))
 #endif /* OPLUS_BUG_STABILITY */
 		phys->hw_pp->ops.setup_dither(phys->hw_pp, dither_cfg, len);
@@ -4836,6 +4847,7 @@ void sde_encoder_needs_hw_reset(struct drm_encoder *drm_enc)
 }
 
 #ifdef OPLUS_BUG_STABILITY
+/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 u32 g_new_bk_level = 0;
 u32 g_oplus_save_pcc = 0;
 extern int backlight_smooth_enable;
@@ -4904,6 +4916,7 @@ static bool is_support_panel(struct drm_connector *connector)
 		}
 
 		if ((!strcmp(dsi_display->panel->oplus_priv.vendor_name, "SOFE03F"))
+			|| (!strcmp(dsi_display->panel->oplus_priv.vendor_name, "AMS662ZS01"))
 			|| (!strcmp(dsi_display->panel->oplus_priv.vendor_name, "S6E3HC3"))) {
 			return true;
 		}else {
@@ -4915,12 +4928,35 @@ static bool is_support_panel(struct drm_connector *connector)
 	}
 }
 
-bool is_spread_backlight(int level)
+bool is_spread_backlight(struct drm_connector *connector,int level)
 {
-	if((level <= 200)&&(level >= 2))
-		return true;
-	else
-		return false;
+	struct sde_connector *c_conn = to_sde_connector(connector);
+	struct dsi_display *dsi_display = NULL;
+
+	dsi_display = c_conn->display;
+
+	if(c_conn->connector_type == DRM_MODE_CONNECTOR_DSI) {
+		if (!dsi_display || !dsi_display->panel || !dsi_display->panel->oplus_priv.vendor_name) {
+			SDE_ERROR("Invalid params(s) dsi_display %pK, panel %pK\n",
+				dsi_display,
+				((dsi_display) ? dsi_display->panel : NULL));
+			return -EINVAL;
+		}
+
+		if (!strcmp(dsi_display->panel->oplus_priv.vendor_name, "AMS662ZS01")) {
+			if((level <= 711)&&(level >= 2))
+				return true;
+			else
+				return false;
+		} else {
+			if((level <= 200)&&(level >= 2))
+				return true;
+			else
+				return false;
+		}
+	}
+
+	return false;
 }
 
 int oplus_backlight_wait_vsync(struct drm_encoder *drm_enc)
@@ -5021,8 +5057,10 @@ int sde_encoder_prepare_for_kickoff(struct drm_encoder *drm_enc,
 	SDE_EVT32(DRMID(drm_enc));
 
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Stable,2019-03-26 add for dc backlight */
 	if (sde_enc->cur_master) {
 		sde_connector_update_backlight(sde_enc->cur_master->connector, false);
+		/*Kevin.liuwq@PSW.MM.Display.LCD.Stable,2021-02-16  Fix low light because of sync_ panel_brightness flash problem*/
 		c_conn = to_sde_connector(sde_enc->cur_master->connector);
 		if(c_conn) {
 			if (c_conn->connector_type != DRM_MODE_CONNECTOR_DSI) {
@@ -5041,9 +5079,10 @@ int sde_encoder_prepare_for_kickoff(struct drm_encoder *drm_enc,
 #endif /* OPLUS_BUG_STABILITY */
 
 #ifdef OPLUS_BUG_STABILITY
+	/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 			if((is_support_panel(sde_enc->cur_master->connector) == true) && backlight_smooth_enable){
 				if(sde_enc->num_phys_encs > 0 ) {
-					if ((get_current_display_framerate(sde_enc->cur_master->connector) >= 75) && is_spread_backlight(g_new_bk_level)) {
+					if ((get_current_display_framerate(sde_enc->cur_master->connector) >= 75) && is_spread_backlight(sde_enc->cur_master->connector, g_new_bk_level)) {
 						if(g_new_bk_level != get_current_display_brightness(sde_enc->cur_master->connector)){
 							oplus_sync_panel_brightness(OPLUS_PREPARE_KICKOFF_METHOD, sde_enc->phys_encs[0]);
 						}
@@ -5084,12 +5123,14 @@ int sde_encoder_prepare_for_kickoff(struct drm_encoder *drm_enc,
 					sde_connector_is_qsync_updated(
 					sde_enc->cur_master->connector)) {
 #ifdef OPLUS_FEATURE_ADFR
+				/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 				if (oplus_adfr_is_support()) {
 					SDE_ATRACE_BEGIN("flush_qsync");
 				}
 #endif
 				_helper_flush_qsync(phys);
 #ifdef OPLUS_FEATURE_ADFR
+				/* CaiHuiyue@MULTIMEDIA, 2020/9/24, qsync enhance */
 				// fix qsync bug from case 04843535
 				if (oplus_adfr_is_support()) {
 					if (sde_enc->disp_info.display_type == SDE_CONNECTOR_PRIMARY)
@@ -5218,9 +5259,10 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool is_error)
 #endif
 
 #ifdef OPLUS_BUG_STABILITY
+	/* HuJie@PSW.MM.Display.LCD.Stability,2021/2/1 add for backlight smooths */
 		if((is_support_panel(sde_enc->cur_master->connector) == true)&& backlight_smooth_enable) {
 			if(sde_enc->num_phys_encs > 0 ) {
-				if ((get_current_display_framerate(sde_enc->cur_master->connector) < 75) && is_spread_backlight(g_new_bk_level)){
+				if ((get_current_display_framerate(sde_enc->cur_master->connector) < 75) && is_spread_backlight(sde_enc->cur_master->connector, g_new_bk_level)){
 					if(g_new_bk_level != get_current_display_brightness(sde_enc->cur_master->connector)){
 					 oplus_sync_panel_brightness(OPLUS_POST_KICKOFF_METHOD, sde_enc->phys_encs[0]);
 					}
@@ -5232,6 +5274,7 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool is_error)
 	_sde_encoder_kickoff_phys(sde_enc);
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	if (oplus_adfr_is_support()) {
 		if (sde_encoder_is_dsi_display(drm_enc)) {
 			sde_encoder_adfr_kickoff(sde_enc->crtc, drm_enc,
@@ -5260,6 +5303,7 @@ void sde_encoder_kickoff(struct drm_encoder *drm_enc, bool is_error)
 
 	SDE_ATRACE_END("encoder_kickoff");
 #ifdef OPLUS_BUG_STABILITY
+/*Mark.Yao@PSW.MM.Display.LCD.Stable,2020-02-23 add for data dimming */
 	sde_connector_update_backlight(sde_enc->cur_master->connector, true);
 #endif /* OPLUS_BUG_STABILITY */
 }
@@ -5400,6 +5444,7 @@ int sde_encoder_prepare_commit(struct drm_encoder *drm_enc)
 	}
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	if (oplus_adfr_is_support()) {
 		if (sde_encoder_is_dsi_display(drm_enc)) {
 			if (sde_enc->cur_master && sde_enc->cur_master->connector) {
@@ -6067,6 +6112,7 @@ struct drm_encoder *sde_encoder_init_with_ops(
 #endif
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	if (oplus_adfr_is_support()) {
 		hrtimer_init(&sde_enc->fakeframe_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		sde_enc->fakeframe_timer.function = sde_encoder_fakeframe_timer_handler;
@@ -6643,6 +6689,7 @@ bool sde_encoder_is_disabled(struct drm_encoder *drm_enc)
 #endif
 
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 
 // queue the fakeframe work to adfr worker
 int sde_encoder_adfr_trigger_fakeframe(void *enc)
@@ -6741,6 +6788,7 @@ void sde_encoder_fakeframe_work_handler(struct kthread_work *work)
 }
 
 /* ------------- mux switch ------------ */
+/* Lauwo.Zhong@MM.Display.LCD.Feature,2021-01-18 add for vsync switch in resolution switch and aod scene */
 void sde_encoder_adfr_vsync_switch(void *enc) {
 	struct drm_encoder *drm_enc = enc;
 	struct sde_encoder_virt *sde_enc = to_sde_encoder_virt(drm_enc);

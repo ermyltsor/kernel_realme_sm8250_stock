@@ -49,6 +49,7 @@
 #include "sde_dbg.h"
 
 #ifdef OPLUS_FEATURE_ADFR
+/* CaiHuiyue@MULTIMEDIA, 2020/10/22, oplus adfr */
 #include "oplus_adfr.h"
 #endif
 
@@ -372,6 +373,7 @@ static int msm_drm_uninit(struct device *dev)
 		}
 	}
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	if (oplus_adfr_is_support()) {
 		oplus_adfr_thread_destroy(priv);
 	}
@@ -649,6 +651,7 @@ static int msm_drm_display_thread_create(struct sched_param param,
 	}
 
 #ifdef OPLUS_FEATURE_ADFR
+	/* CaiHuiyue@MULTIMEDIA, 2020/10/15, fake frame */
 	/**
 	 * Use a seperate adfr thread for fake frame.
 	 * Because fake frame maybe causes crtc commit/event more heavy.
@@ -1639,6 +1642,7 @@ int msm_ioctl_power_ctrl(struct drm_device *dev, void *data,
 }
 
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 static int msm_ioctl_iris_operate_conf(struct drm_device *dev, void *data,
 				    struct drm_file *file)
 {
@@ -1675,6 +1679,7 @@ static const struct drm_ioctl_desc msm_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MSM_POWER_CTRL, msm_ioctl_power_ctrl,
 			DRM_RENDER_ALLOW),
 #if defined(OPLUS_FEATURE_PXLW_IRIS5)
+// Pixelworks@MULTIMEDIA.DISPLAY, 2020/06/02, Iris5 Feature
 	DRM_IOCTL_DEF_DRV(MSM_IRIS_OPERATE_CONF, msm_ioctl_iris_operate_conf, DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(MSM_IRIS_OPERATE_TOOL, msm_ioctl_iris_operate_tool, DRM_UNLOCKED),
 #endif
