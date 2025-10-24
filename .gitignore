@@ -135,3 +135,9 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# Custom build environment
+/anykernel/*.zip
+/clang-r383902/
+/gcc64-tools/
+/out/
