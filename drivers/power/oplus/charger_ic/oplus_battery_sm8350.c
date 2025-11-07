@@ -3107,7 +3107,8 @@ static int battery_psy_get_prop(struct power_supply *psy,
 		pval->intval = chip->limits.temp_normal_vfloat_mv;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		if ((oplus_chg_get_voocphy_support() == NO_VOOCPHY && oplus_vooc_get_fastchg_started() == true) || chip->charger_exist  == 0) {
+		if (((oplus_chg_get_voocphy_support() == NO_VOOCPHY && oplus_vooc_get_fastchg_started() == true) ||
+						chip->charger_exist  == 0) && chip->read_by_reg == 0) {
 			pval->intval = oplus_gauge_get_prev_batt_current();
 		} else {
 			pval->intval = oplus_gauge_get_batt_current();
@@ -9136,7 +9137,7 @@ static int fg_bq27541_get_average_current(void)
 	bcdev = chip->pmic_spmi.bcdev_chip;
 	pst = &bcdev->psy_list[PSY_TYPE_BATTERY];
 
-	if (chip->fg_info_package_read_support && !chip->charger_exist) {
+	if (chip->fg_info_package_read_support && !chip->charger_exist && !chip->read_by_reg) {
 		curr = DIV_ROUND_CLOSEST((int)bcdev->read_buffer_dump.data_buffer[1], 1000);
 		return curr;
 	}

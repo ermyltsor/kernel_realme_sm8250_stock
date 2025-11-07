@@ -67,8 +67,8 @@
 #include "../voocphy/oplus_voocphy.h"
 #include "../oplus_configfs.h"
 #if IS_ENABLED(CONFIG_TCPC_CLASS)
-#include "../../../../../../kernel_platform/msm-kernel/drivers/usb/typec/pd/inc/tcpci.h"
-#include "../../../../../../kernel_platform/msm-kernel/drivers/usb/typec/pd/inc/tcpm.h"
+#include "../pd_ext/inc/tcpci.h"
+#include "../pd_ext/inc/tcpm.h"
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))
@@ -1258,7 +1258,6 @@ int oplus_sy697x_get_otg_online_status(void)
 	return online;
 }
 EXPORT_SYMBOL(oplus_sy697x_get_otg_online_status);
-
 
 static bool oplus_usbtemp_check_is_gpio(struct oplus_chg_chip *chip)
 {
@@ -5450,10 +5449,6 @@ RECHECK:
 		case SY697X_VBUS_TYPE_CDP:
 			sy->chg_type = CHARGING_HOST;
 			sy->oplus_chg_type = POWER_SUPPLY_TYPE_USB_CDP;
-			if (!sy->cdp_retry) {
-				sy->cdp_retry = true;
-				schedule_delayed_work(&g_sy->sy697x_bc12_retry_work, OPLUS_BC12_RETRY_TIME_CDP);
-			}
 			break;
 		case SY697X_VBUS_TYPE_DCP:
 			sy->chg_type = STANDARD_CHARGER;

@@ -33,6 +33,8 @@
 #define BQ2589X 2
 #define BQ2591X 3
 #define SGM41512 4
+#define SGM41542 5
+#define SC6607 9
 
 #define CHARGING_INTERVAL 10
 #define CHARGING_FULL_INTERVAL 20
@@ -515,6 +517,7 @@ struct mtk_charger {
 	bool ntc_switch_used;
 	bool wait_hard_reset_complete;
 	bool support_mt6375_charger;
+	bool sc6607_support;
 #endif
 };
 
@@ -564,10 +567,11 @@ int mt6375_get_hvdcp_type(void);
 void mt6375_enable_hvdcp_detect(void);
 int mt6375_set_hvdcp_to_5v(void);
 int mt6375_set_hvdcp_to_9v(void);
-void oplus_notify_hvdcp_detect_stat(void);
+extern void oplus_notify_hvdcp_detect_stat(void);
 void oplus_set_hvdcp_flag_clear(void);
 int oplus_battery_meter_get_battery_voltage(void);
 bool mt6375_int_chrdet_attach(void);
+extern int oplus_pdc_setup(int *vbus_mv, int *ibus_ma);
 #endif
 
 #endif /* __MTK_CHARGER_H */

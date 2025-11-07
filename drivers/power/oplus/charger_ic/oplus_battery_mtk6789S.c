@@ -157,6 +157,9 @@ struct delayed_work wd0_get_status_work;
 
 extern struct oplus_chg_operations  oplus_chg_bq2589x_ops;
 extern struct oplus_chg_operations  sgm41512_chg_ops;
+extern struct oplus_chg_operations  oplus_chg_sgm41542_ops;
+extern struct oplus_chg_operations  oplus_chg_sc6607_ops;
+
 extern void oplus_usbtemp_recover_func(struct oplus_chg_chip *chip);
 extern int oplus_usbtemp_monitor_common(void *data);
 
@@ -164,8 +167,10 @@ extern int oplus_usbtemp_monitor_common_new_method(void *data);
 
 extern int bq2589x_driver_init(void);
 extern int sgm41512_charger_init(void);
+extern int sgm41542_charger_init(void);
 extern int sc8547_subsys_init(void);
 extern int sc8547_slave_subsys_init(void);
+extern int bq27541_driver_init(void);
 static void oplus_ccdetect_disable(void);
 static void oplus_ccdetect_enable(void);
 static int oplus_get_chargeric_temp(void);
@@ -181,6 +186,8 @@ extern void wusb3801_set_cc_open(struct tcpc_device *tcpc);
 extern void wusb3801_set_cc_open_recover(struct tcpc_device *tcpc);
 extern void sgm7220_set_sinkonly(struct tcpc_device *tcpc);
 extern void wusb3801_set_sinkonly(struct tcpc_device *tcpc);
+extern int sc6607_charger_init(void);
+extern void sc6607_charger_exit(void);
 #ifdef CONFIG_OPLUS_CHARGER_OPTIGA
 extern int oplus_optiga_driver_init(void);
 extern void oplus_optiga_driver_exit(void);
@@ -190,6 +197,18 @@ static int oplus_mt6375_check_charging_enable(void);
 static int oplus_mt6375_disable_charging(void);
 static __s16 oplus_res_to_temp(struct ntc_temp *ntc_param);
 static int oplus_chg_get_battery_btb_temp(void);
+void oplus_otg_enable_by_buckboost(void);
+void oplus_otg_disable_by_buckboost(void);
+
+void mt_usb_connect_v1(void)
+{
+	return;
+}
+
+void mt_usb_disconnect_v1(void)
+{
+	return;
+}
 
 int con_volt_6789[] = {
 	1760,
@@ -2758,7 +2777,7 @@ static ssize_t enable_sc_store(
 	if (buf != NULL && size != 0) {
 		chr_err("[enable smartcharging] buf is %s\n", buf);
 		ret = kstrtoul(buf, 10, &val);
-		if (val < 0) {
+		if (ret < 0) {
 			chr_err(
 				"[enable smartcharging] val is %d ??\n",
 				(int)val);
@@ -4465,6 +4484,53 @@ bool oplus_check_pdphy_ready(void)
 }
 EXPORT_SYMBOL(oplus_check_pdphy_ready);
 
+#define OPLUS_MIN_PDO_VOL 5000
+#define OPLUS_MIN_PDO_CUR 3000
+int oplus_pps_pd_exit(void)
+{
+	int ret = -1;
+	int vbus_mv_t = OPLUS_MIN_PDO_VOL;
+	int ibus_ma_t = OPLUS_MIN_PDO_CUR;
+
+	struct oplus_chg_chip *chip = g_oplus_chip;
+	struct tcpc_device *tcpc = NULL;
+
+	if (chip == NULL) {
+		chg_err("no oplus_chg_chip");
+		return -ENODEV;
+	}
+
+	if(chip->chg_ops->check_chrdet_status) {
+		if (chip->chg_ops->check_chrdet_status() == false)
+			return ret;
+	}
+
+	tcpc = tcpc_dev_get_by_name("type_c_port0");
+	if (tcpc == NULL) {
+		chg_err("get type_c_port0 fail");
+		return -EINVAL;
+	}
+
+	ret = tcpm_set_pd_charging_policy(tcpc, DPM_CHARGING_POLICY_VSAFE5V, NULL);
+
+	ret = tcpm_dpm_pd_request(tcpc, vbus_mv_t, ibus_ma_t, NULL);
+	if (ret != TCPM_SUCCESS) {
+		chg_err("tcpm_dpm_pd_request fail");
+		return -EINVAL;
+	}
+
+	ret = tcpm_inquire_pd_contract(tcpc, &vbus_mv_t, &ibus_ma_t);
+	if (ret != TCPM_SUCCESS) {
+		chg_err("inquire current vbus_mv and ibus_ma fail");
+		return -EINVAL;
+	}
+
+	msleep(100);
+	chg_err("PD Default vbus_mv[%d], ibus_ma[%d]", vbus_mv_t, ibus_ma_t);
+
+	return ret;
+}
+
 static void oplus_chg_pps_get_source_cap(struct mtk_charger *info)
 {
 	struct tcpm_power_cap_val apdo_cap;
@@ -4556,8 +4622,13 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	if (IS_ERR_OR_NULL(pinfo))
 		return ret;
 
-	pr_notice("PD charger event:%d %d\n", (int)event,
-		(int)noti->pd_state.connected);
+	if (noti == NULL) {
+		pr_notice("PD charger noti is null\n");
+		return ret;
+	} else {
+		pr_notice("PD charger event:%d %d\n", (int)event,
+			(int)noti->pd_state.connected);
+	}
 
 	switch (event) {
 	case TCP_NOTIFY_SOURCE_VBUS:
@@ -4586,6 +4657,8 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 					g_oplus_chip->chg_ops->otg_enable();
 					otg_flag = true;
 				}
+			} else if (pinfo && pinfo->sc6607_support) {
+				oplus_otg_enable_by_buckboost();
 			}
 		} else {
 			if (pinfo && pinfo->support_mt6375_charger) {
@@ -4596,6 +4669,9 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			}
 			oplus_set_boost_en_val(0);
 			oplus_set_ext1_otg_en_val(0);
+			if (pinfo && pinfo->sc6607_support) {
+				oplus_otg_disable_by_buckboost();
+			}
 			msleep(50);
 			if (g_oplus_chip->chgic_mtk.oplus_info->usb_ocm) {
 				oplus_chg_global_event(g_oplus_chip->chgic_mtk.oplus_info->usb_ocm, OPLUS_CHG_EVENT_OTG_DISABLE);
@@ -4771,6 +4847,14 @@ void oplus_set_typec_sinkonly(void)
 		chg_info("usbtemp occur otg switch[0]\n");
 		tcpm_typec_change_role_postpone(pinfo->tcpc, TYPEC_ROLE_SNK, true);
 	}
+}
+
+void oplus_set_typec_cc_open(void)
+{
+	if (pinfo == NULL || pinfo->tcpc == NULL)
+		return;
+	tcpm_typec_disable_function(pinfo->tcpc, true);
+	chg_err(" !\n");
 }
 
 static void set_usbswitch_to_rxtx(struct oplus_chg_chip *chip)
@@ -5239,7 +5323,7 @@ static int oplus_get_chargeric_temp(void)
 	if (!pinfo)
 	    return -EINVAL;
 
-	if (!pinfo->support_mt6375_charger)
+	if (!(pinfo->support_mt6375_charger || pinfo->sc6607_support))
 		return pinfo->chargeric_temp_cal;
 
 	if (pinfo->chargeric_temp_chan) {
@@ -5987,6 +6071,9 @@ static void oplus_ccdetect_enable(void)
 		if (pinfo->support_mt6375_charger) {
 			tcpm_typec_change_role_postpone(pinfo->tcpc, TYPEC_ROLE_TRY_SNK, true);
 			chg_info("set try_snk\n");
+		} else if (pinfo->sc6607_support) {
+			tcpm_typec_change_role_postpone(pinfo->tcpc, TYPEC_ROLE_TRY_SNK, true);
+			chg_info("set try_snk\n");
 		} else {
 			tcpm_typec_change_role(pinfo->tcpc, TYPEC_ROLE_DRP);
 			chg_info("set drp\n");
@@ -6010,6 +6097,8 @@ static void oplus_ccdetect_disable(void)
 	/* set SINK mode */
 	if (pinfo != NULL && pinfo->tcpc != NULL){
 		if (pinfo->support_mt6375_charger)
+			tcpm_typec_change_role_postpone(pinfo->tcpc, TYPEC_ROLE_SNK, true);
+		else if (pinfo->sc6607_support)
 			tcpm_typec_change_role_postpone(pinfo->tcpc, TYPEC_ROLE_SNK, true);
 		else
 			tcpm_typec_change_role(pinfo->tcpc, TYPEC_ROLE_SNK);
@@ -6202,6 +6291,30 @@ static bool oplus_chg_get_vbus_status(struct oplus_chg_chip *chip)
 
 	return chip->charger_exist;
 }
+#define PORT_ERROR 0
+#define PORT_A 1
+#define PORT_PD_WITH_USB 2
+#define PORT_PD_WITHOUT_USB 3
+int oplus_check_pd_usb_type(void)
+{
+	struct tcpc_device *tcpc;
+	int ret = 0;
+
+	tcpc = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc) {
+		chg_err("get type_c_port0 fail\n");
+		return PORT_ERROR;
+	}
+
+	if (!tcpm_inquire_pd_connected(tcpc))
+		return PORT_A;
+
+	ret = tcpm_inquire_dpm_flags(tcpc);
+	if (ret & DPM_FLAGS_PARTNER_USB_COMM)
+		return PORT_PD_WITH_USB;
+
+	return PORT_PD_WITHOUT_USB;
+}
 
 static void oplus_usbtemp_thread_init(void)
 {
@@ -6352,6 +6465,24 @@ static int oplus_mtk_hv_flashled_dt(struct oplus_chg_chip *chip)
 	chg_err("mtk_hv_flash_led:%d\n", rc);
 	return rc;
 
+}
+
+void oplus_otg_enable_by_buckboost(void)
+{
+	if (!g_oplus_chip || !(g_oplus_chip->chg_ops->charging_disable)
+		|| !(g_oplus_chip->chg_ops->charging_disable))
+		return;
+
+	g_oplus_chip->chg_ops->charging_disable();
+	g_oplus_chip->chg_ops->otg_enable();
+}
+
+void oplus_otg_disable_by_buckboost(void)
+{
+	if (!g_oplus_chip || !(g_oplus_chip->chg_ops->otg_disable))
+		return;
+
+	g_oplus_chip->chg_ops->otg_disable();
 }
 
 static int oplus_wrx_otg_en_gpio_init(struct oplus_chg_chip *chip)
@@ -6989,7 +7120,7 @@ int oplus_get_fast_chg_type(void)
 	return fast_chg_type;
 }
 
-static bool oplus_pd_without_usb(void)
+bool oplus_pd_without_usb(void)
 {
 	struct tcpc_device *tcpc;
 
@@ -8048,7 +8179,7 @@ static bool oplus_chg_get_shortc_hw_gpio_status(void)
 #define IBUS_2A	2000
 #define IBUS_3A	3000
 
-static int oplus_pdc_setup(int *vbus_mv, int *ibus_ma) {
+int oplus_pdc_setup(int *vbus_mv, int *ibus_ma) {
 	int ret = 0;
 	int vbus_mv_t = 0;
 	int ibus_ma_t = 0;
@@ -8057,6 +8188,12 @@ static int oplus_pdc_setup(int *vbus_mv, int *ibus_ma) {
 	tcpc = tcpc_dev_get_by_name("type_c_port0");
 	if (tcpc == NULL) {
 		chg_err("get type_c_port0 fail\n");
+		return -EINVAL;
+	}
+
+	ret = tcpm_set_pd_charging_policy(tcpc, DPM_CHARGING_POLICY_MAX_POWER_LVIC, NULL);
+	if (ret != TCPM_SUCCESS) {
+		chg_err("tcpm_set_apdo_charging_policy fail\n");
 		return -EINVAL;
 	}
 
@@ -8496,6 +8633,8 @@ int oplus_chg_get_battery_btb_temp_cal(void)
 {
 	if (oplus_ntc_ctrl_is_support()) {
 		return pinfo->battery_btb_temp_cal;
+	} else if (g_oplus_chip && g_oplus_chip->chg_ops->get_cp_tsbat) {
+		return g_oplus_chip->chg_ops->get_cp_tsbat();
 	} else {
 		return oplus_chg_get_battery_btb_temp();
 	}
@@ -8631,6 +8770,112 @@ void oplus_adc_switch_update_work(struct work_struct *work)
 		queue_delayed_work(system_freezable_wq, &adc_switch_update_work, msecs_to_jiffies(800));
 	}
 }
+#define R_CHARGER_1     330
+#define R_CHARGER_2     39
+static struct iio_channel		*chan_vbus;
+int get_vbus_voltage(int *val)
+{
+	int ret = 0;
+
+	if (!IS_ERR_OR_NULL(chan_vbus)) {
+		ret = iio_read_channel_processed(chan_vbus, val);
+		if (ret < 0) {
+			chr_err("[%s]read fail,ret=%d\n", __func__, ret);
+		}
+	} else {
+		chr_err("[%s]chan error chan_vbus_id\n", __func__);
+		ret = -1;
+	}
+
+	*val = (((R_CHARGER_1 +
+			R_CHARGER_2) * 100 * (*val)) /
+			R_CHARGER_2) / 100;
+	chr_info("%s get vbus voltage=%d\n", __func__, *val);
+	return ret;
+}
+
+#define OPLUS_BATTERY_TYPE_LEN 16
+static int oplus_battery_parse_cmdline_match(char *match_str, char *result, int size)
+{
+	struct device_node *cmdline_node = NULL;
+	const char *cmdline;
+	char *match, *match_end;
+	int len, match_str_len, ret;
+
+	if (!result || !match_str)
+		return -EINVAL;
+
+	memset(result, '\0', size);
+	match_str_len = strlen(match_str);
+
+	cmdline_node = of_find_node_by_path("/chosen");
+	if (!cmdline_node) {
+		chr_err("%s:line%d: NULL pointer!!!\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	ret = of_property_read_string(cmdline_node, "bootargs", &cmdline);
+	if (ret) {
+		chr_err("%s failed to read bootargs\n", __func__);
+		return -EINVAL;
+	}
+
+	match = strstr(cmdline, match_str);
+	if (!match) {
+		chr_err("match: %s fail in cmdline\n", match_str);
+		return -EINVAL;
+	}
+
+	match_end = strstr((match + match_str_len), " ");
+	if (!match_end) {
+		chr_err("match end of : %s fail in cmdline\n", match_str);
+		return -EINVAL;
+	}
+
+	len = match_end - (match + match_str_len);
+	if (len < 0 || len > size) {
+		chr_err("match cmdline :%s fail, len = %d\n", match_str, len);
+		return -EINVAL;
+	}
+
+	memcpy(result, (match + match_str_len), len);
+
+	return 0;
+}
+
+int oplus_gauge_get_battery_type_str(char *type)
+{
+	char *str = "battery_type=";
+	char result[32] = {};
+	int ret;
+
+	ret = oplus_battery_parse_cmdline_match(str, result, sizeof(result));
+	if (ret < 0) {
+		chr_err("match battery type str fail\n");
+		return ret;
+	}
+	snprintf(type, OPLUS_BATTERY_TYPE_LEN, "%s", result);
+
+	return ret;
+}
+
+struct device_node *oplus_get_node_by_type(struct device_node *father_node)
+{
+	char battery_type_str[OPLUS_BATTERY_TYPE_LEN] = { 0 };
+	struct device_node *sub_node = NULL;
+	struct device_node *node = father_node;
+
+	int rc = oplus_gauge_get_battery_type_str(battery_type_str);
+	if (rc == 0) {
+		sub_node = of_get_child_by_name(father_node, battery_type_str);
+		if (sub_node) {
+			node = sub_node;
+		chr_err("current battery type str = %s\n", battery_type_str);
+		}
+	}
+
+	return node;
+}
 
 #define GET_ADC_CHANNEL_RETRY 3
 static int mtk_charger_probe(struct platform_device *pdev)
@@ -8647,6 +8892,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	int level = 0;
 	int rc = 0;
 	bool sgm41512_support;
+	bool sgm41542_support;
 #endif
 
 	chr_err("%s: starts\n", __func__);
@@ -8655,6 +8901,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (!info)
 		return -ENOMEM;
 	platform_set_drvdata(pdev, info);
+
+	pdev->dev.of_node = oplus_get_node_by_type(pdev->dev.of_node);
+
 	info->pdev = pdev;
 
 	mtk_charger_parse_dt(info, &pdev->dev);
@@ -8669,6 +8918,12 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	sgm41512_support = of_property_read_bool(pdev->dev.of_node, "qcom,sgm41512_support");
 	chr_err("sgm41512 is supprot = %d\n", sgm41512_support);
+
+	sgm41542_support = of_property_read_bool(pdev->dev.of_node, "qcom,sgm41542_support");
+	chr_err("sgm41542 is supprot = %d\n", sgm41542_support);
+
+	info->sc6607_support = of_property_read_bool(pdev->dev.of_node, "oplus,sc6607_support");
+	chr_err("sc6607 is supprot = %d\n", pinfo->sc6607_support);
 
 	support_usbtemp_protect_v2 = of_property_read_bool(pdev->dev.of_node, "qcom,support_usbtemp_protect_v2");
 	chr_err("support_usbtemp_protect_v2 = %d\n", support_usbtemp_protect_v2);
@@ -8696,6 +8951,12 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		} else if (sgm41512_support) {
 			oplus_chip->chg_ops = &sgm41512_chg_ops;
 			chr_info("success set sgm41512_chg_ops\n");
+		} else if (sgm41542_support) {
+			oplus_chip->chg_ops = &oplus_chg_sgm41542_ops;
+			chr_info("success set sgm41542_chg_ops\n");
+		} else if (info->sc6607_support) {
+			oplus_chip->chg_ops = &oplus_chg_sc6607_ops;
+			chr_info("success set sc6607_ops\n");
 		} else {
 			oplus_chip->chg_ops = &oplus_chg_bq2589x_ops;
 			chr_info("success set oplus_chg_bq2589x_ops\n");
@@ -8728,6 +8989,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		chg_err("can't find primary charger!\n");
 	}
 #endif /* OPLUS_FEATURE_CHG_BASIC */
+
+	chan_vbus = devm_iio_channel_get(oplus_chip->dev, "pmic_vbus_voltage");
+	if (IS_ERR(chan_vbus)) {
+		chg_err("%s: pmic_battery_temp auxadc get fail\n", __func__);
+	}
 
 	mutex_init(&info->cable_out_lock);
 	mutex_init(&info->charger_lock);
@@ -8788,6 +9054,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->chg_psy = devm_power_supply_get_by_phandle(&pdev->dev, "charger");
 	else if (sgm41512_support)
 		info->chg_psy = power_supply_get_by_name("sgm41512");
+	else if (sgm41542_support)
+		info->chg_psy = power_supply_get_by_name("sgm41542");
+	else if (info->sc6607_support)
+		info->chg_psy = power_supply_get_by_name("sc6607");
 	else
 		info->chg_psy = power_supply_get_by_name("bq2589x");
 
@@ -9004,6 +9274,9 @@ static void mtk_charger_shutdown(struct platform_device *dev)
 	}
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
+	if(oplus_is_pps_charging())
+		oplus_pps_shutdown();
+
 	if (g_oplus_chip) {
 		enter_ship_mode_function(g_oplus_chip);
 	}
@@ -9132,12 +9405,14 @@ static int __init mtk_charger_init(void)
 #ifdef OPLUS_FEATURE_CHG_BASIC
 //	charge_pump_driver_init();
 	//mp2650_driver_init();
-	//bq27541_driver_init();
+	bq27541_driver_init();
 //	op10_subsys_init();
 //	adapter_ic_init();
 	pr_err("bq2589x_driver_init\n");
 	bq2589x_driver_init();
 	sgm41512_charger_init();
+	sgm41542_charger_init();
+	sc6607_charger_init();
 	sc8547_subsys_init();
 #endif
 #ifdef CONFIG_OPLUS_CHARGER_OPTIGA
@@ -9153,6 +9428,7 @@ static void __exit mtk_charger_exit(void)
 {
 	platform_driver_unregister(&mtk_charger_driver);
 #ifdef OPLUS_FEATURE_CHG_BASIC
+	sc6607_charger_exit();
 	oplus_chg_ops_deinit();
 #endif
 #ifdef CONFIG_OPLUS_CHARGER_OPTIGA

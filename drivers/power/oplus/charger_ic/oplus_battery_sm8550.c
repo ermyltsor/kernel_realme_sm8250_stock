@@ -3410,7 +3410,7 @@ static int battery_psy_get_prop(struct power_supply *psy,
 		pval->intval = chip->limits.temp_normal_vfloat_mv;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		if (chip->voocphy_support == ADSP_VOOCPHY) {
+		if (chip->voocphy_support == ADSP_VOOCPHY || chip->read_by_reg == 1) {
 			pval->intval = oplus_gauge_get_batt_current();
 		} else {
 			pval->intval = oplus_gauge_get_prev_batt_current();
@@ -9632,6 +9632,16 @@ int oplus_chg_wired_get_break_sub_crux_info(char *crux_info)
 	return bcdev->real_chg_type;
 }
 
+int oplus_abnormal_adapter_disconnect_keep(void)
+{
+	int ret_val = 0;
+	if ((oplus_chg_get_voocphy_support() == ADSP_VOOCPHY) &&
+		(oplus_chg_get_fast_chg_type() == ADAPTER_ID_65W_0X14) &&
+		oplus_is_pd_svooc() && !oplus_voocphy_get_fastchg_start())
+			ret_val = 1;
+	return ret_val;
+}
+
 #define MAX_VBUS_CHECK_COUNTS			4
 #define VOLTAGE_800MV				800
 #define GET_INFO_FROMADS_MAXIMIT		3
@@ -11720,7 +11730,7 @@ static int fg_bq27541_get_average_current(void)
 	bcdev = chip->pmic_spmi.bcdev_chip;
 	pst = &bcdev->psy_list[PSY_TYPE_BATTERY];
 
-	if (oplus_chg_get_voocphy_support() == ADSP_VOOCPHY && !chip->charger_exist) {
+	if (oplus_chg_get_voocphy_support() == ADSP_VOOCPHY && !chip->charger_exist && !chip->read_by_reg) {
 		curr = DIV_ROUND_CLOSEST((int)bcdev->read_buffer_dump.data_buffer[1], 1000);
 		return curr;
 	}

@@ -100,6 +100,7 @@
 #define USB_OTG_CURR_LIMIT_MAX   3000
 #define USB_OTG_CURR_LIMIT_HIGH  1700
 #define USB_OTG_REAL_SOC_MIN     10
+#define FFC_FULL_DELTA_ITEARM_MA 400
 #endif
 
 /* Generic definitions */
@@ -272,6 +273,9 @@ enum usb_property_id {
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	USB_PPS_FORCE_SVOOC,
 #endif /*OPLUS_FEATURE_CHG_BASIC*/
+	USB_SCOPE,
+	USB_CONNECTOR_TYPE,
+	F_ACTIVE,
 	USB_PROP_MAX,
 };
 
@@ -427,6 +431,8 @@ struct oplus_custom_gpio_pinctrl {
 	struct pinctrl_state	*usbtemp_r_gpio_default;
 	struct pinctrl			*subboard_temp_gpio_pinctrl;
 	struct pinctrl_state	*subboard_temp_gpio_default;
+	struct pinctrl		*batt1_con_therm_gpio_pinctrl;
+	struct pinctrl_state	*batt1_con_therm_gpio_default;
 	struct pinctrl		*otg_boost_en_pinctrl;
 	struct pinctrl_state	*otg_boost_en_active;
 	struct pinctrl_state	*otg_boost_en_sleep;
@@ -567,6 +573,8 @@ struct battery_chg_dev {
 	struct completion    bcc_read_ack;
 	struct oem_read_buffer_resp_msg  bcc_read_buffer_dump;
 	int otg_scheme;
+	bool pmic_is_pm7250b;
+	int ffc_full_delta_iterm_ma;
 	int otg_boost_src;
 	int otg_curr_limit_max;
 	int otg_curr_limit_high;

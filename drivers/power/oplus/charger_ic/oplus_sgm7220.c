@@ -1540,7 +1540,11 @@ err_pinctrl:
 	return ret;
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
+static void sgm7220_remove(struct i2c_client *client)
+#else
 static int sgm7220_remove(struct i2c_client *client)
+#endif
 {
 	struct sgm7220_info *info = i2c_get_clientdata(client);
 
@@ -1554,7 +1558,9 @@ static int sgm7220_remove(struct i2c_client *client)
 	i2c_set_clientdata(client, NULL);
 
 	kfree(info);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 	return 0;
+#endif
 }
 
 static const struct of_device_id sgm7220_dt_match[] = {
@@ -1566,9 +1572,8 @@ static const struct of_device_id sgm7220_dt_match[] = {
 MODULE_DEVICE_TABLE(of, sgm7220_dt_match);
 
 static const struct i2c_device_id sgm7220_id_table[] = {
-	{
-		.name = "sgm7220",
-	},
+	{"sgm7220", 0},
+	{},
 };
 
 static void sgm7220_shutdown(struct i2c_client *client)

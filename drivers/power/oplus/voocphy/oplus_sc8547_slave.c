@@ -175,9 +175,9 @@ static void sc8547_slave_update_data(struct oplus_voocphy_manager *chip)
 	} else {
 		sc8547_slave_i2c_error(false);
 	}
-	for (i=0; i<2; i++) {
-		pr_info("data_block[%d] = %u\n", i, data_block[i]);
-	}
+	for (i=0; i<2; i++)
+		pr_debug("data_block[%d] = %u\n", i, data_block[i]);
+
 	chip->slave_cp_ichg = ((data_block[0] << 8) | data_block[1])*1875 / 1000;
 	pr_info("slave cp_ichg = %d int_flag = %d", chip->slave_cp_ichg, int_flag);
 }
@@ -392,7 +392,7 @@ static int sc8547_slave_init_device(struct oplus_voocphy_manager *chip)
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_05, reg_data);	//IBUS_OCP_UCP:3.6A
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_2B, 0x00);	//VOOC_CTRL:disable
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_30, 0x7F);
-	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);	//VBUS_IN_RANGE:disable
 	if (!ic_sc8547a)
 		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_07, 0x05);
 	else
@@ -406,17 +406,13 @@ static int sc8547_slave_reset_device(struct oplus_voocphy_manager *chip)
 {
 	u8 reg_data;
 
-	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_11,
-				0x00); /* ADC_CTRL:disable */
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_11, 0x00); /* ADC_CTRL:disable */
 	/* The logic does not change when the main CP controls OVP */
 	if (chip->ovp_ctrl_cpindex == MASTER_CP_ID)
-		sc8547_slave_write_byte(chip->slave_client,
-					SC8547_REG_02, 0x01);
-	sc8547_slave_write_byte(chip->slave_client,
-				SC8547_REG_04, 0x00); /* VBUS_OVP:10 2:1 or 1:1V */
+		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_02, 0x01);
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_04, 0x00); /* VBUS_OVP:10 2:1 or 1:1V */
 	reg_data = slave_ovp_reg & SC8547_BAT_OVP_MASK;
-	sc8547_slave_write_byte(chip->slave_client,
-				SC8547_REG_00, reg_data); /* VBAT_OVP:4.65V */
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_00, reg_data); /* VBAT_OVP:4.65V */
 	if (!ic_sc8547a) {
 		reg_data = (SC8547_IBUS_UCP_FALL_DEGLITCH_SET_5MS << SC8547_IBUS_UCP_FALL_DEGLITCH_SET_SHIFT)
 				| (slave_ocp_reg & SC8547_IBUS_OCP_MASK);
@@ -424,14 +420,10 @@ static int sc8547_slave_reset_device(struct oplus_voocphy_manager *chip)
 		reg_data = (SC8547A_IBUS_UCP_FALL_DEGLITCH_SET_5MS << SC8547A_IBUS_UCP_FALL_DEGLITCH_SET_SHIFT)
 				| (slave_ocp_reg & SC8547A_IBUS_OCP_MASK);
 	}
-	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_05,
-				reg_data); /* IBUS_OCP_UCP:3.6A  */
-	sc8547_slave_write_byte(chip->slave_client,
-				SC8547_REG_2B, 0x00); /* VOOC_CTRL:disable */
-	sc8547_slave_write_byte(chip->slave_client,
-				SC8547_REG_30, 0x7F);
-	sc8547_slave_write_byte(chip->slave_client,
-				SC8547_REG_3C, 0x40);
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_05, reg_data); /* IBUS_OCP_UCP:3.6A  */
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_2B, 0x00); /* VOOC_CTRL:disable */
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_30, 0x7F);
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40); //VBUS_IN_RANGE:disable
 
 	/* bit2:0 Set the CP switching frequency 550kHz */
 	if (!ic_sc8547a) {
@@ -477,7 +469,7 @@ static int sc8547_slave_svooc_hw_setting(struct oplus_voocphy_manager *chip)
 				| (slave_ocp_reg & SC8547A_IBUS_OCP_MASK);
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_05, reg_data);	//IBUS_OCP_UCP:3.6A
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_09, 0x03);	//WD:1000ms
-	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);	//VOOC_CTRL:disable
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);	//VBUS_IN_RANGE:disable
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_11, 0x80);	//ADC_CTRL:ADC_EN
 	if (!ic_sc8547a)
 		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_07, 0x05);
@@ -506,7 +498,7 @@ static int sc8547_slave_vooc_hw_setting(struct oplus_voocphy_manager *chip)
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_09, 0x83);	//WD:5000ms
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_11, 0x80);	//ADC_CTRL:
 	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_2B, 0x00);	//VOOC_CTRL
-	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);	//VOOC_CTRL:disable
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);	//VBUS_IN_RANGE:disable
 
 	return 0;
 }
@@ -694,6 +686,7 @@ static int sc8547_slave_parse_dt(struct oplus_voocphy_manager *chip)
 	} else {
 		chg_err("slave_ocp_reg is %d\n", slave_ocp_reg);
 	}
+
 	rc = of_property_read_u32(node, "oplus,pps_ocp_max", &chip->pps_ocp_max);
 	if (rc)
 		chip->pps_ocp_max = 3600;
@@ -702,18 +695,38 @@ static int sc8547_slave_parse_dt(struct oplus_voocphy_manager *chip)
 
 	return 0;
 }
+
+static int sc8547_slave_charger_choose(struct oplus_voocphy_manager *chip)
+{
+	int ret;
+
+	if (oplus_voocphy_chip_is_null()) {
+		pr_err("oplus_voocphy_chip null, will do after master cp init!");
+		return -EPROBE_DEFER;
+	} else {
+		ret = i2c_smbus_read_byte_data(chip->slave_client, 0x07);
+		pr_err("0x07 = %d\n", ret);
+		if (ret < 0) {
+			pr_err("i2c communication fail");
+			return -EPROBE_DEFER;
+		}
+		else
+			return 1;
+	}
+}
+
 static int sc8547_slave_cp_hardware_init(struct i2c_client *client)
 {
 	int ret = 0;
 	struct oplus_voocphy_manager *chip = NULL;
 
-	if (client == NULL) {
+	if (!client) {
 		pr_err("sc8547_slave_cp_hardware_init not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	chip = (struct oplus_voocphy_manager *)i2c_get_clientdata(client);
-	if (chip == NULL) {
+	if (!chip) {
 		pr_err("device chip in clientdata is null\n");
 		return -ENODEV;
 	}
@@ -727,13 +740,13 @@ static int sc8547_slave_cp_reg_reset(struct i2c_client *client)
 	int ret = 0;
 	struct oplus_voocphy_manager *chip = NULL;
 
-	if (client == NULL) {
+	if (!client) {
 		pr_err("sc8547_slave_cp_reg_reset not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	chip = (struct oplus_voocphy_manager *)i2c_get_clientdata(client);
-	if (chip == NULL) {
+	if (!chip) {
 		pr_err("device chip in clientdata is null\n");
 		return -ENODEV;
 	}
@@ -746,62 +759,75 @@ static int sc8547_slave_cp_reg_reset(struct i2c_client *client)
 
 static int sc8547_slave_cp_config_sc_mode(struct i2c_client *client)
 {
-	u8 reg_data, reg_data1;
+	u8 reg_data1, reg_data2;
 	struct oplus_voocphy_manager *chip = NULL;
 
-	if (client == NULL) {
+	if (!client) {
 		pr_err("sc8547_slave_cp_config_sc_mode not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	chip = (struct oplus_voocphy_manager *)i2c_get_clientdata(client);
-	if (chip == NULL) {
+	if (!chip) {
 		pr_err("device chip in clientdata is null\n");
 		return -ENODEV;
 	}
 
-	reg_data = (((chip->pps_ocp_max - SC8547_IBUS_OCP_BASE) / SC8547_IBUS_OCP_LSB) << SC8547_IBUS_OCP_SHIFT) & SC8547_IBUS_OCP_MASK;
-	reg_data |= ((SC8547_IBUS_UCP_FALL_DEGLITCH_SET_5MS << SC8547_IBUS_UCP_FALL_DEGLITCH_SET_SHIFT) & SC8547_IBUS_UCP_FALL_DEGLITCH_SET_MASK);
+	reg_data1 = (((chip->pps_ocp_max - SC8547_IBUS_OCP_BASE) / SC8547_IBUS_OCP_LSB) << SC8547_IBUS_OCP_SHIFT) &
+				SC8547_IBUS_OCP_MASK;
+	if (!ic_sc8547a)
+		reg_data2 = (SC8547_IBUS_UCP_FALL_DEGLITCH_SET_5MS << SC8547_IBUS_UCP_FALL_DEGLITCH_SET_SHIFT) &
+					SC8547_IBUS_UCP_FALL_DEGLITCH_SET_MASK;
+	else
+		reg_data2 = (SC8547A_IBUS_UCP_FALL_DEGLITCH_SET_5MS << SC8547A_IBUS_UCP_FALL_DEGLITCH_SET_SHIFT) &
+					SC8547A_IBUS_UCP_FALL_DEGLITCH_SET_MASK;
+	reg_data2 |= reg_data1;
 
-	reg_data1 = 0x20 | (slave_ovp_reg & 0x1f);
-	sc8547_slave_write_byte(client, SC8547_REG_00, reg_data1); /* VBAT_OVP:4.65V */
 	sc8547_slave_write_byte(client, SC8547_REG_02, 0x01); /* VAC_OVP:12v */
 	sc8547_slave_write_byte(client, SC8547_REG_04, 0x64); /* VBUS_OVP:11v */
-	sc8547_slave_write_byte(client, SC8547_REG_05, reg_data); /* IBUS_OCP_UCP:4.2A, config in dtsi */
-	sc8547_slave_write_byte(client, SC8547_REG_09, 0x13); /* WD:1s bit7[0]-->2:1 */
+	sc8547_slave_write_byte(client, SC8547_REG_05, reg_data2); /* IBUS_OCP_UCP:4.2A, config in dtsi */
+	sc8547_slave_write_byte(client, SC8547_REG_09, 0x03); /* WD:1s bit7[0]-->2:1 */
 	sc8547_slave_write_byte(client, SC8547_REG_11, 0x80); /* ADC_CTRL:ADC_EN */
 	sc8547_slave_write_byte(client, SC8547_REG_0D, 0x70); /* PMID2OUT_UVP_OVP */
 	sc8547_slave_write_byte(client, SC8547_REG_2B, 0x00); /* VOOC_CTRL:disable voocphy */
-
-	pr_info("sc8547 slave configed sc mode, ocp_reg=0x%02x  vbat_reg=0x%02x\n", reg_data, reg_data1);
+	if (!ic_sc8547a)
+		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_07, 0x05);
+	else
+		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_07, 0x1);
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);	//VBUS_IN_RANGE:disable
+	pr_info("configed sc mode, ocp_reg=0x%02x\n", reg_data2);
 	return 0;
 }
 
 static int sc8547_slave_cp_config_bypass_mode(struct i2c_client *client)
 {
-	u8 reg_data;
 	struct oplus_voocphy_manager *chip = NULL;
 
-	if (client == NULL) {
+	if (!client) {
 		pr_err("sc8547_slave_cp_config_bypass_mode not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	chip = (struct oplus_voocphy_manager *)i2c_get_clientdata(client);
-	if (chip == NULL) {
+	if (!chip) {
 		pr_err("device chip in clientdata is null\n");
 		return -ENODEV;
 	}
 
-	reg_data = 0x20 | (slave_ovp_reg & 0x1f);
-	sc8547_slave_write_byte(client, SC8547_REG_00, reg_data); /* VBAT_OVP:4650mV */
 	sc8547_slave_write_byte(client, SC8547_REG_02, 0x07); /* VAC_OVP:6.5V */
 	sc8547_slave_write_byte(client, SC8547_REG_04, 0x0A); /* VBUS_OVP:6.5V */
-	sc8547_slave_write_byte(client, SC8547_REG_05, 0x2c); /* IBUS_OCP_UCP:4.2A */
-	sc8547_slave_write_byte(client, SC8547_REG_09, 0x93); /* WD:1s bit7[1]-->1:1 */
+	if (!ic_sc8547a)
+		sc8547_slave_write_byte(client, SC8547_REG_05, 0x2a); /* IBUS_OCP_UCP:4.2A */
+	else
+		sc8547_slave_write_byte(client, SC8547_REG_05, 0x1a); /* IBUS_OCP_UCP:4.2A */
+	sc8547_slave_write_byte(client, SC8547_REG_09, 0x83); /* WD:1s bit7[1]-->1:1 */
 	sc8547_slave_write_byte(client, SC8547_REG_11, 0x80); /* ADC_CTRL:ADC_EN */
 	sc8547_slave_write_byte(client, SC8547_REG_2B, 0x00); /* VOOC_CTRL:disable voocphy */
-
+	if (!ic_sc8547a)
+		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_07, 0x05);
+	else
+		sc8547_slave_write_byte(chip->slave_client, SC8547_REG_07, 0x1);
+	sc8547_slave_write_byte(chip->slave_client, SC8547_REG_3C, 0x40);       //VBUS_IN_RANGE:disable
 	pr_info("sc8547 slave configed bypass mode\n");
 	return 0;
 }
@@ -811,13 +837,13 @@ static int sc8547_slave_set_cp_enable(struct i2c_client *client, int enable)
 	int ret = 0;
 	struct oplus_voocphy_manager *chip = NULL;
 
-	if (client == NULL) {
+	if (!client) {
 		pr_err("sc8547_slave_set_cp_enable not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	chip = (struct oplus_voocphy_manager *)i2c_get_clientdata(client);
-	if (chip == NULL) {
+	if (!chip) {
 		pr_err("device chip in clientdata is null\n");
 		return -ENODEV;
 	}
@@ -836,7 +862,7 @@ static int sc8547_slave_cp_get_vbus(struct i2c_client *client)
 	u8 data_block[2] = {0};
 	s32 ret = 0;
 
-	if (client == NULL) {
+	if (!client) {
 		pr_err("sc8547_slave_cp_get_vbus not get i2c_client\n");
 		return -EINVAL;
 	}
@@ -864,8 +890,13 @@ static int sc8547_slave_cp_get_ibus(struct i2c_client *client)
 	int cp_ichg = 0;
 	struct oplus_voocphy_manager *chip = NULL;
 
+	if (!client) {
+		pr_err("not get i2c_client\n");
+		return -EINVAL;
+	}
+
 	chip = (struct oplus_voocphy_manager *)i2c_get_clientdata(client);
-	if (chip == NULL) {
+	if (!chip) {
 		pr_err("device chip in clientdata is null\n");
 		return -ENODEV;
 	}
@@ -883,7 +914,7 @@ static int sc8547_slave_cp_get_ibus(struct i2c_client *client)
 		sc8547_slave_i2c_error(false);
 	}
 
-	cp_ichg = ((data_block[0] << 8) | data_block[1])*1875 / 1000;
+	cp_ichg = ((data_block[0] << 8) | data_block[1]) * 1875 / 1000;
 
 	return cp_ichg;
 }
@@ -894,8 +925,8 @@ static int sc8547_slave_cp_get_vac(struct i2c_client *client)
 	u8 data_block[2] = {0};
 	s32 ret = 0;
 
-	if (client == NULL) {
-		pr_err("sc8547_slave_cp_get_vac not get i2c_client\n");
+	if (!client) {
+		pr_err("not get i2c_client\n");
 		return -EINVAL;
 	}
 
@@ -919,15 +950,15 @@ static int sc8547_slave_cp_get_vout(struct i2c_client *client)
 	u8 data_block[2] = {0};
 	s32 ret = 0;
 
-	if (client == NULL) {
-		pr_err("sc8547_slave_cp_get_vout not get i2c_client\n");
+	if (!client) {
+		pr_err("not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	ret = i2c_smbus_read_i2c_block_data(client, SC8547_REG_19, 2, data_block);
 	if (ret < 0) {
 		sc8547_slave_i2c_error(true);
-		pr_err("sc8547 slave read vout error\n");
+		pr_err("read vout error\n");
 	} else {
 		sc8547_slave_i2c_error(false);
 	}
@@ -944,15 +975,15 @@ static int sc8547_slave_cp_get_tdie(struct i2c_client *client)
 	u8 data_block[2] = {0};
 	s32 ret = 0;
 
-	if (client == NULL) {
-		pr_err("sc8547_slave_cp_get_tdie slave not get i2c_client\n");
+	if (!client) {
+		pr_err("not get i2c_client\n");
 		return -EINVAL;
 	}
 
 	ret = i2c_smbus_read_i2c_block_data(client, SC8547_REG_1F, 2, data_block);
 	if (ret < 0) {
 		sc8547_slave_i2c_error(true);
-		pr_err("sc8547 slave read vout error\n");
+		pr_err("read vout error\n");
 	} else {
 		sc8547_slave_i2c_error(false);
 	}
@@ -970,6 +1001,9 @@ static bool sc8547_slave_cp_get_enable(struct i2c_client *client)
 	int ret = 0;
 	u8 val;
 
+	if (!client)
+		return -EINVAL;
+
 	ret = sc8547_slave_read_byte(client, SC8547_REG_07, &val);
 	if (ret < 0) {
 		pr_err("read reg07 fail\n");
@@ -986,6 +1020,9 @@ static bool sc8547_slave_cp_get_status(struct i2c_client *client)
 	u8 data_reg06, data_reg07;
 	int ret_reg06, ret_reg07;
 
+	if (!client)
+		return -EINVAL;
+
 	ret_reg06 = sc8547_slave_read_byte(client, SC8547_REG_06, &data_reg06);
 	ret_reg07 = sc8547_slave_read_byte(client, SC8547_REG_07, &data_reg07);
 
@@ -998,13 +1035,32 @@ static bool sc8547_slave_cp_get_status(struct i2c_client *client)
 	data_reg06 = data_reg06 >> 2;
 	data_reg07 = data_reg07 >> 7;
 
-	pr_err("reg06 = %d reg07 = %d\n", data_reg06, data_reg07);
+	pr_info("reg06 = %d reg07 = %d\n", data_reg06, data_reg07);
 
 	if (data_reg06 == 1 && data_reg07 == 1) {
 		return true;
 	} else {
 		return false;
 	}
+}
+
+/**
+ *when the watchdog is set to 1s,the allowed error of the chip is 800ms.
+ *any i2c communication can kick the dog.
+ */
+static bool sc8547_slave_cp_kick_dog(struct i2c_client *client)
+{
+	u8 val;
+	int ret;
+
+	if (!client)
+		return -EINVAL;
+
+	ret = sc8547_slave_read_byte(client, SC8547_REG_36, &val);
+	if (ret < 0)
+		return false;
+	else
+		return true;
 }
 
 static struct oplus_pps_cp_device_operations sc8547_cp_pps_ops = {
@@ -1020,6 +1076,7 @@ static struct oplus_pps_cp_device_operations sc8547_cp_pps_ops = {
 	.oplus_get_cp_tdie      = sc8547_slave_cp_get_tdie,
 	.oplus_get_cp_enable    = sc8547_slave_cp_get_enable,
 	.oplus_get_cp_status    = sc8547_slave_cp_get_status,
+	.oplus_cp_kick_dog      = sc8547_slave_cp_kick_dog,
 };
 
 static int sc8547_pps_check_and_register(struct oplus_voocphy_manager *chip)
@@ -1063,27 +1120,13 @@ static int sc8547_pps_check_and_register(struct oplus_voocphy_manager *chip)
 	}
 	return 0;
 }
-static int sc8547_slave_charger_choose(struct oplus_voocphy_manager *chip)
-{
-	int ret;
 
-	if (oplus_voocphy_chip_is_null()) {
-		pr_err("oplus_voocphy_chip null, will do after master cp init!");
-		return -EPROBE_DEFER;
-	} else {
-		ret = i2c_smbus_read_byte_data(chip->slave_client, 0x07);
-		pr_err("0x07 = %d\n", ret);
-		if (ret < 0) {
-			pr_err("i2c communication fail");
-			return -EPROBE_DEFER;
-		}
-		else
-			return 1;
-	}
-}
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+static int sc8547_slave_charger_probe(struct i2c_client *client)
+#else
 static int sc8547_slave_charger_probe(struct i2c_client *client,
                                       const struct i2c_device_id *id)
+#endif
 {
 	struct oplus_voocphy_manager *chip;
 	int ret;
@@ -1128,7 +1171,9 @@ static int sc8547_slave_charger_probe(struct i2c_client *client,
 	oplus_voocphy_get_chip(&oplus_voocphy_mg);
 
 	pr_err("sc8547_slave_parse_dt successfully!\n");
+
 	sc8547_pps_check_and_register(chip);
+
 	return 0;
 #if 0
 err_1:
