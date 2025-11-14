@@ -19,8 +19,6 @@
 #include <linux/string.h>
 #if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 #include <soc/oplus/system/kernel_fb.h>
-#elif defined(CONFIG_OPLUS_KEVENT_UPLOAD)
-#include <linux/oplus_kevent.h>
 #endif
 #include "oplus_chg_track.h"
 #include "oplus_charger.h"
@@ -768,8 +766,7 @@ struct oplus_chg_track {
 	wait_queue_head_t upload_wq;
 
 	struct workqueue_struct *trigger_upload_wq;
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 	struct kernel_packet_info *dcs_info;
 #endif
 	struct delayed_work upload_info_dwork;
@@ -842,8 +839,7 @@ static DEFINE_MUTEX(debugfs_root_mutex);
 static DEFINE_SPINLOCK(adsp_fifo_lock);
 static DEFINE_SPINLOCK(gauge_fifo_lock);
 
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 static int oplus_chg_track_pack_dcs_info(struct oplus_chg_track *chip);
 #endif
 static int oplus_chg_track_get_charger_type(struct oplus_chg_chip *chip, struct oplus_chg_track_status *track_status,
@@ -851,8 +847,7 @@ static int oplus_chg_track_get_charger_type(struct oplus_chg_chip *chip, struct 
 static int oplus_chg_track_obtain_wls_break_sub_crux_info(struct oplus_chg_track *track_chip, char *crux_info);
 static int oplus_chg_track_get_local_time_s(void);
 
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 static struct type_reason_table track_type_reason_table[] = {
 	{ TRACK_NOTIFY_TYPE_SOC_JUMP, "soc_error" },
 	{ TRACK_NOTIFY_TYPE_GENERAL_RECORD, "general_record" },
@@ -4145,8 +4140,7 @@ static int oplus_chg_track_init(struct oplus_chg_track *track_dev)
 	return ret;
 }
 
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 static int oplus_chg_track_get_type_tag(int type_reason, char *type_reason_tag)
 {
 	int i = 0;
@@ -4280,8 +4274,7 @@ int oplus_chg_track_upload_trigger_data(oplus_chg_track_trigger data)
 	pr_debug("type_reason:%d, flag_reason:%d, crux_info[%s]\n", chip->trigger_data.type_reason,
 		chip->trigger_data.flag_reason, chip->trigger_data.crux_info);
 	chip->trigger_data_ok = true;
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-        defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 	oplus_chg_track_get_flag_tag(chip->trigger_data.flag_reason, flag_reason_tag);
 #endif
 	chg_exception_report(&chip->track_cfg.exception_data, chip->trigger_data.type_reason,
@@ -4321,8 +4314,7 @@ static int oplus_chg_track_thread(void *data)
 			pr_err("oplus chg false wakeup, rc=%d\n", rc);
 		mutex_lock(&chip->trigger_data_lock);
 		chip->trigger_data_ok = false;
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 		oplus_chg_track_pack_dcs_info(chip);
 #endif
 		chip->dwork_retry_cnt = OPLUS_CHG_TRACK_DWORK_RETRY_CNT;
@@ -4531,8 +4523,7 @@ static int oplus_chg_track_get_local_time_s(void)
 */
 #define TRACK_VERSION	"3.7"
 
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 static int oplus_chg_track_pack_dcs_info(struct oplus_chg_track *chip)
 {
 	int ret = 0;
@@ -4593,8 +4584,6 @@ static void oplus_chg_track_upload_info_dwork(struct work_struct *work)
 	mutex_lock(&chip->dcs_info_lock);
 #if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 	ret = fb_kevent_send_to_user(chip->dcs_info);
-#elif defined(CONFIG_OPLUS_KEVENT_UPLOAD)
-	ret = kevent_send_to_user(chip->dcs_info);
 #endif
 	mutex_unlock(&chip->dcs_info_lock);
 	if (!ret)
@@ -7673,8 +7662,7 @@ static int oplus_chg_track_driver_probe(struct platform_device *pdev)
 		goto adsp_kfifo_err;
 	}
 
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 	track_dev->dcs_info =
 		(struct kernel_packet_info *)kmalloc(sizeof(char) * OPLUS_CHG_TRIGGER_MSG_LEN, GFP_KERNEL);
 	if (!track_dev->dcs_info) {
@@ -7757,8 +7745,7 @@ gauge_kfifo_err:
 parse_dt_err:
 debugfs_create_fail:
 bcc_info_kzmalloc_fail:
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 	kfree(track_dev->dcs_info);
 dcs_info_kmalloc_fail:
 #endif
@@ -7776,8 +7763,7 @@ static int oplus_chg_track_driver_remove(struct platform_device *pdev)
 
 	if (track_debugfs_root)
 		debugfs_remove_recursive(track_debugfs_root);
-#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE) ||                         \
-	defined(CONFIG_OPLUS_KEVENT_UPLOAD)
+#if defined(CONFIG_OPLUS_FEATURE_FEEDBACK) || defined(CONFIG_OPLUS_FEATURE_FEEDBACK_MODULE)
 	kfree(track_dev->dcs_info);
 #endif
 	kfree(track_dev->track_status.bcc_info);
