@@ -1514,7 +1514,7 @@ static bool hdd_is_mcast_replay(struct sk_buff *skb)
  *
  * Return: true if local arp or false otherwise.
  */
-static bool hdd_is_arp_local(struct sk_buff *skb)
+static __attribute__((unused)) bool hdd_is_arp_local(struct sk_buff *skb)
 {
 	struct arphdr *arp;
 	struct in_ifaddr **ifap = NULL;
