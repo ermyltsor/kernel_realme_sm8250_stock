@@ -1061,14 +1061,6 @@ static const struct file_operations proc_ufsf_para_fops = {
 static struct proc_dir_entry *healthinfo = NULL;
 static struct proc_dir_entry *sched_thresh = NULL;
 
-#ifdef CONFIG_KMALLOC_DEBUG
-/* operations of vmalloc_debug and kmalloc_debug */
-
-extern int __weak create_kmalloc_debug(struct proc_dir_entry *parent);
-#endif
-#ifdef CONFIG_VMALLOC_DEBUG
-extern int __weak create_vmalloc_debug(struct proc_dir_entry *parent);
-#endif
 #ifdef CONFIG_VIRTUAL_RESERVE_MEMORY
 int create_reserved_area_enable_proc(struct proc_dir_entry *parent);
 #endif
@@ -1231,19 +1223,6 @@ static int __init healthinfo_init(void)
         ohm_err("create fsync_thresh proc failed.\n");
         goto ERROR_INIT_VERSION;
     }
-#ifdef CONFIG_VMALLOC_DEBUG
-	/* create the vmalloc_debug file node */
-	ret = create_vmalloc_debug(healthinfo);
-	if (ret)
-		goto ERROR_INIT_VERSION;
-#endif
-
-#ifdef CONFIG_KMALLOC_DEBUG
-	/* create the kmalloc_debug file node. */
-	ret = create_kmalloc_debug(healthinfo);
-	if (ret)
-		goto ERROR_INIT_VERSION;
-#endif
 
 #if ((LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)) && IS_BUILTIN(CONFIG_OPLUS_FEATURE_ZRAM_OPT)) \
 	|| ((LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)) && defined(CONFIG_HYBRIDSWAP_SWAPD))
