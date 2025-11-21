@@ -23,9 +23,6 @@
 #ifdef CONFIG_PROCESS_RECLAIM_ENHANCE
 #include <linux/process_mm_reclaim.h>
 #endif
-#ifdef CONFIG_KSWAPD_DEBUG_STATISTICS
-#include <soc/oplus/lowmem_dbg.h>
-#endif
 #include <linux/version.h>
 #include <linux/time64.h>
 #include <linux/timekeeping.h>
@@ -1244,12 +1241,6 @@ static int __init healthinfo_init(void)
 #ifdef CONFIG_KMALLOC_DEBUG
 	/* create the kmalloc_debug file node. */
 	ret = create_kmalloc_debug(healthinfo);
-	if (ret)
-		goto ERROR_INIT_VERSION;
-#endif
-
-#ifdef CONFIG_KSWAPD_DEBUG_STATISTICS
-	ret = kswapd_debug_init(healthinfo);
 	if (ret)
 		goto ERROR_INIT_VERSION;
 #endif
