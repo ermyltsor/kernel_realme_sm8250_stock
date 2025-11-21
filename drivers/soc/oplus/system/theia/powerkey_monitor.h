@@ -70,7 +70,6 @@
 #endif
 
 #include <linux/sched/signal.h>
-#include <soc/oplus/system/oplus_signal.h>
 
 #define PWKKEY_DCS_TAG                      "CriticalLog"
 #define PWKKEY_DCS_EVENTID                  "Theia"

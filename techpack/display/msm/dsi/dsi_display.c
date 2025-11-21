@@ -34,7 +34,6 @@
 #include "iris/dsi_iris5_api.h"
 #endif
 #ifdef OPLUS_BUG_STABILITY
-#include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/notifier.h>
 #include "oplus_display_private_api.h"
@@ -807,19 +806,6 @@ static bool dsi_display_validate_reg_read(struct dsi_panel *panel)
 		group += len;
 	}
 
-#ifdef OPLUS_BUG_STABILITY
-	if (rc <= 0) {
-		char payload[150] = "";
-		int cnt = 0;
-		cnt += scnprintf(payload + cnt, sizeof(payload) - cnt, "DisplayDriverID@@408$$");
-		cnt += scnprintf(payload + cnt, sizeof(payload) - cnt, "ESD:");
-		for (i = 0; i < len; ++i)
-			cnt += scnprintf(payload + cnt, sizeof(payload) - cnt, "[%02x] ", config->return_buf[i]);
-		DRM_ERROR("ESD check failed: %s\n", payload);
-		mm_fb_display_kevent(payload, MM_FB_KEY_RATELIMIT_1H, "ESD check failed");
-	}
-#endif  /*OPLUS_BUG_STABILITY*/
-
 	return false;
 }
 
@@ -1099,68 +1085,6 @@ static int dsi_display_status_bta_request(struct dsi_display *display)
 	return rc;
 }
 
-#ifdef OPLUS_BUG_STABILITY
-/* A tablet Pad, modify esd */
-static int dsi_display_status_check_error_flag(struct dsi_display *display)
-{
-	int rc = 1;
-	int read_value = 0;
-	int read_value_slave =0;
-	int no_check = 1;
-
-	if (display == NULL)
-		return rc;
-
-	if (gpio_is_valid(display->panel->esd_config.esd_error_flag_gpio)
-		&& gpio_is_valid(display->panel->esd_config.esd_error_flag_gpio_slave)) {
-		rc = gpio_request(display->panel->esd_config.esd_error_flag_gpio, "error-flag-gpio");
-		if (rc < 0) {
-			pr_err("%s: request esd_error_flag_gpio[%d] fail, rc=%d\n",
-				__func__, display->panel->esd_config.esd_error_flag_gpio, rc);
-			return no_check ;
-		}
-		rc = gpio_direction_input(display->panel->esd_config.esd_error_flag_gpio);
-		if (rc < 0) {
-			pr_err("%s: input  esd_error_flag_gpio[%d] fail, rc=%d\n",
-				__func__, display->panel->esd_config.esd_error_flag_gpio, rc);
-			return no_check ;
-		}
-
-		rc = gpio_request(display->panel->esd_config.esd_error_flag_gpio_slave, "error-flag-gpio-slave");
-		if (rc < 0) {
-			pr_err("%s: request esd_error_flag_gpio_slave[%d] fail, rc=%d\n",
-				__func__, display->panel->esd_config.esd_error_flag_gpio_slave, rc);
-			return no_check ;
-		}
-		rc = gpio_direction_input(display->panel->esd_config.esd_error_flag_gpio_slave);
-		if (rc < 0) {
-			pr_err("%s: input esd_error_flag_gpio_slave[%d] fail, rc=%d\n",
-				__func__, display->panel->esd_config.esd_error_flag_gpio_slave, rc);
-			return no_check ;
-		}
-		read_value = gpio_get_value(display->panel->esd_config.esd_error_flag_gpio);
-		read_value_slave = gpio_get_value(display->panel->esd_config.esd_error_flag_gpio_slave);
-		pr_info("first:read_value=%d, read_value_slave=%d\n", read_value, read_value_slave);
-		if (read_value || read_value_slave) {
-			msleep(100);
-			read_value = gpio_get_value(display->panel->esd_config.esd_error_flag_gpio);
-			read_value_slave = gpio_get_value(display->panel->esd_config.esd_error_flag_gpio_slave);
-			pr_info("second:read_value=%d, read_value_slave=%d\n", read_value, read_value_slave);
-			if (read_value || read_value_slave) {
-				pr_err("%s:reading erro flag gpio is failing, rc = %d\n", __func__, rc);
-				gpio_free(display->panel->esd_config.esd_error_flag_gpio);
-				gpio_free(display->panel->esd_config.esd_error_flag_gpio_slave);
-				return -EINVAL;
-			}
-		}
-		gpio_free(display->panel->esd_config.esd_error_flag_gpio);
-		gpio_free(display->panel->esd_config.esd_error_flag_gpio_slave);
-	}
-
-	return no_check;
-}
-#endif /* OPLUS_BUG_STABILITY */
-
 static int dsi_display_status_check_te(struct dsi_display *display)
 {
 	int rc = 1;
@@ -1188,13 +1112,6 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
 	u32 status_mode;
 	int rc = 0x1, ret;
 	u32 mask;
-#ifdef OPLUS_BUG_STABILITY
-	/* A tablet Pad, add for FPC cause splash screen issue */
-	static int dsi_panel_err_flag_continue_count = 0;
-	static int count = 0;
-	struct timeval now;
-	int esd_tmp;
-#endif/*OPLUS_BUG_STABILITY*/
 
 	if (!dsi_display || !dsi_display->panel)
 		return -EINVAL;
@@ -1255,82 +1172,6 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
 	} else if (status_mode == ESD_MODE_PANEL_TE) {
 		rc = dsi_display_status_check_te(dsi_display);
 	}
-#ifdef OPLUS_BUG_STABILITY
-	/* A tablet Pad, modify esd */
-	else if (status_mode == ESD_MODE_PANEL_ERROR_FLAG) {
-	        rc = dsi_display_status_check_error_flag(dsi_display);
-		/* A tablet Pad, add for FPC cause splash screen issue */
-		if (rc > 0) {
-			dsi_panel_err_flag_continue_count = 0;
-		} else {
-			if (panel->nt36523w_old_fpc) {
-				if ( dsi_panel_need_rewrite_reg == 0) {
-					if (dsi_panel_need_reset_count) {
-						esd_occurred_count = 0;
-						dsi_panel_err_flag_continue_count = 0;
-						store_index = 0;
-						dsi_panel_need_reset_count = false;
-					}
-					esd_occurred_count++;
-					DSI_INFO("panel esd_occurred_count %d\n",esd_occurred_count);
-					do_gettimeofday(&now);
-					esd_time_buffer[store_index] = now.tv_sec;
-
-					/*3 times continue trigger rewrite*/
-					dsi_panel_err_flag_continue_count++;
-					if (dsi_panel_err_flag_continue_count == continue_esd_count) {
-						DSI_INFO("3 times continue error set dsi_panel_need_rewrite_reg = 1\n");
-						dsi_panel_need_rewrite_reg = 1;
-						dsi_panel_err_flag_continue_count = 0;
-						count++;
-						mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H,
-							"DisplayDriverID@@424$$ err flag continue 3 times. count = %d\n", count);
-					}
-
-					/*10 times in 1 hour trigger rewrite*/
-					if (esd_occurred_count < record_count_occurr) {
-						DSI_INFO("panel %d get value = %ld\n", store_index,esd_time_buffer[store_index]);
-						store_index++;
-					} else {
-						esd_tmp = esd_time_buffer[store_index] - esd_time_buffer[(store_index + 1) % record_count_occurr];
-						DSI_INFO("panel >10 store_index= %ld,%ld, value =%ld, %ld, result = %ld\n",
-								store_index,
-								((store_index+1) % record_count_occurr),
-								esd_time_buffer[store_index],
-								esd_time_buffer[(store_index + 1) % record_count_occurr],
-								esd_tmp);
-						if (esd_tmp < esd_time_region) {
-							dsi_panel_need_rewrite_reg = 1;
-							count++;
-							DSI_INFO("panel rewrite ++++++ \n");
-							mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H,
-								"DisplayDriverID@@425$$ 10 times ESD occurred in one hour. count = %d, ESD total - %d\n",
-								count, esd_occurred_count);
-						}
-						store_index = (store_index + 1) % record_count_occurr;
-						DSI_INFO("panel >10 store_index =%d\n", store_index);
-					}
-				}
-				if (dsi_panel_need_rewrite_reg == 1) {
-					if (dsi_panel_need_reset_count) {
-						dsi_panel_err_flag_continue_count = 0;
-						dsi_panel_need_reset_count = false;
-					}
-
-					/*3 times continue trigger rewrite*/
-					dsi_panel_err_flag_continue_count++;
-					if (dsi_panel_err_flag_continue_count == continue_esd_count) {
-						DSI_INFO("3 times continue error set dsi_panel_need_rewrite_reg = 2\n");
-						dsi_panel_need_rewrite_reg = 2;
-						count++;
-						mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H,
-							"DisplayDriverID@@426$$ err flag continue 3 times. count = %d\n", count);
-					}
-				}
-			}
-		}
-	}
-#endif /* OPLUS_BUG_STABILITY */
 	else {
 		DSI_WARN("Unsupported check status mode: %d\n", status_mode);
 		panel->esd_config.esd_enabled = false;
@@ -7856,9 +7697,6 @@ int dsi_display_prepare(struct dsi_display *display)
 			if (rc) {
 				DSI_ERR("[%s] panel pre-switch failed, rc=%d\n",
 					display->name, rc);
-				#ifdef OPLUS_BUG_STABILITY
-				DSI_MM_ERR("[dsi error] [%s] panel pre-switch failed, rc=%d\n",display->name, rc);
-				#endif
 			}
 			goto error;
 		}

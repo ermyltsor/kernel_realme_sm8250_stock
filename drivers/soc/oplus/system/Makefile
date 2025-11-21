@@ -2,14 +2,10 @@
 # Copyright (C) 2018-2020 Oplus. All rights reserved.
 
 obj-y 	+= platform.o
-obj-$(CONFIG_OPLUS_FEATURE_FEEDBACK) 	+= feedback/
-obj-$(CONFIG_OPLUS_FEATURE_UBOOT_LOG) 	+= uboot_log/
 obj-$(CONFIG_OPLUS_FEATURE_SHUTDOWN_DETECT)    += shutdown_detect/
 obj-$(CONFIG_OPLUS_FEATURE_SLABTRACE_DEBUG) +=  slabtrace/
 obj-$(CONFIG_OPLUS_FEATURE_OPROJECT) 	+= oplus_project/
 obj-$(CONFIG_OPLUS_FEATURE_QCOM_MINIDUMP_ENHANCE) 	+= qcom_minidump/
-obj-$(CONFIG_OPLUS_FEATURE_HUNG_TASK_ENHANCE) += hung_task_enhance/
-obj-$(CONFIG_OPLUS_FEATURE_PHOENIX)     += oplus_phoenix/
 obj-$(CONFIG_OPLUS_FEATURE_PMIC_MONITOR)     += oplus_pmic_monitor/
 obj-$(CONFIG_OPLUS_FEATURE_SAUPWK)     += oplus_saupwk/
 obj-$(CONFIG_OPLUS_FEATURE_DUMP_DEVICE_INFO)	+=  dump_device_info/
@@ -27,10 +23,6 @@ endif
 obj-$(CONFIG_OPLUS_FEATURE_QCOM_PMICWD)     += qcom_pmicwd/
 #endif /* OPLUS_FEATURE_QCOM_PMICWD */
 
-#ifdef OPLUS_FEATURE_MM_FEEDBACK
-obj-$(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)         += oplus_mm_fb/
-#endif /* OPLUS_FEATURE_MM_FEEDBACK */
-
 #ifdef OPLUS_FEATURE_QCOM_WATCHDOG
 obj-$(CONFIG_OPLUS_FEATURE_QCOM_WATCHDOG)     += qcom_watchdog/
 #endif /* OPLUS_FEATURE_QCOM_WATCHDOG */
@@ -47,14 +39,6 @@ obj-y += misc/
 #ifdef OPLUS_FEATURE_MDMFEATURE
 obj-$(CONFIG_OPLUS_FEATURE_MDMFEATURE)     += mdmfeature/
 #endif /*OPLUS_FEATURE_MDMFEATURE*/
-
-#ifdef OPLUS_FEATURE_OLC
-obj-$(CONFIG_OPLUS_FEATURE_OLC) += olc/
-#endif /*OPLUS_FEATURE_OLC */
-
-#ifdef CONFIG_OPLUS_FEATURE_FDLEAK_CHECK
-obj-$(CONFIG_OPLUS_FEATURE_FDLEAK_CHECK)     += oplus_fdleak/
-#endif /*CONFIG_OPLUS_FEATURE_FDLEAK_CHECK*/
 
 #ifdef OPLUS_FEATURE_INIT_WATCHDOG
 obj-$(CONFIG_OPLUS_FEATURE_INIT_WATCHDOG) += init_watchdog/

@@ -1628,9 +1628,6 @@ struct task_struct {
 	struct list_head fbg_list;
 	int fbg_depth;
 #endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_FDLEAK_CHECK)
-	unsigned int fdleak_flag;
-#endif
 	/* task is frozen/stopped (used by the cgroup freezer) */
 
 	ANDROID_KABI_USE(1, unsigned frozen:1);

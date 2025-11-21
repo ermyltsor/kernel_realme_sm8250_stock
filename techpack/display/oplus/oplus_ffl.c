@@ -54,7 +54,6 @@ void oplus_ffl_set(int enable)
 
 	if ((is_ffl_enable ==FFL_TRIGGLE_CONTROL) && ffl_work_running) {
 		scnprintf(payload, sizeof(payload), "fflset@@%d", enable);
-		/*upload_mm_fb_kevent_to_atlas(OPLUS_DISPLAY_EVENTID_FFLSET, payload);*/
 	}
 }
 
